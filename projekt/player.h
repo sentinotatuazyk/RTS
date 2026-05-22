@@ -22,6 +22,7 @@ public:
 
     void addUnit(sf::Vector2f position, UnitType type);
     std::vector<Unit>& getUnits();
+    const std::vector<Unit>& getUnits() const;
     void addBuilding(sf::Vector2f position, BuildingType type);
     
 private:

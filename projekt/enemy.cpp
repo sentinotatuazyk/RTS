@@ -4,9 +4,6 @@ Enemy::Enemy() : m_speed(150.f), m_health(100), m_isMoving(false), m_isDead(fals
 {
     m_shape.setRadius(15.f);
  
-
-    // Ustawiamy środek ciężkości (Origin) na sam środek kółka,
-    // to bardzo ułatwi potem pozycjonowanie i obracanie!
     m_shape.setOrigin({ 15.f, 15.f });
 }
 

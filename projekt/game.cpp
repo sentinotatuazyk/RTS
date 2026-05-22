@@ -16,10 +16,11 @@ Game::Game() :
 
 	m_view = m_window.getDefaultView();
 
-	// Dodajemy główny Ratusz na środku:
+	m_ui.init("geistmono_light.ttf");
+	m_ui.forceRebuild(m_window, m_player);
+
 	m_player.addBuilding({ centerX, centerY }, BuildingType::TownHall);
 
-	// Dodajemy różne jednostki obok ratusza:
 	m_player.addUnit({ centerX + 80.f, centerY - 50.f }, UnitType::Worker);
 	m_player.addUnit({ centerX + 80.f, centerY + 50.f }, UnitType::Worker);
 
@@ -56,14 +57,14 @@ void Game::addEnemy(sf::Vector2f position, EnemyType type)
 
 void Game::handleEnemyCollisions()
 {
-	// 1. Wróg vs Mapa
+	// enemy vs mapa
 	for (auto& enemy : m_enemies) {
 		sf::Vector2f pos = enemy.getPosition();
 		applyMapCollision(pos, enemy.getRadius(), m_map);
 		enemy.setPosition(pos);
 	}
 
-	// 2. Wróg vs Wróg
+	// enemy vs enemy
 	for (size_t i = 0; i < m_enemies.size(); ++i) {
 		for (size_t j = i + 1; j < m_enemies.size(); ++j) {
 			sf::Vector2f pos1 = m_enemies[i].getPosition();
@@ -76,7 +77,7 @@ void Game::handleEnemyCollisions()
 		}
 	}
 
-	// 3. Wróg vs Gracz
+	// enemy vs unit
 	for (auto& enemy : m_enemies) {
 		for (auto& unit : m_player.getUnits()) {
 			sf::Vector2f posE = enemy.getPosition();
@@ -125,6 +126,7 @@ void Game::render() {
 			enemy.draw(m_window);
 		}
 		m_window.setView(m_window.getDefaultView());
+		m_ui.draw(m_window,m_player);
 	}
 
 	
@@ -144,9 +146,13 @@ void Game::procesEvents() {
 			else if (action == MenuAction::StartGame) m_state = State::Playing;
 		}
 		else if (m_state == State::Playing) {
+			m_window.setView(m_window.getDefaultView());
+			if (m_ui.handleEvent(*event, m_window, m_player)) {
+				continue;
+			}
 			m_window.setView(m_view);
 			m_player.handleEvent(*event, m_window);
-			m_window.setView(m_window.getDefaultView());
+
 			if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
 				if (keyPressed->scancode == sf::Keyboard::Scancode::Escape) {
 					m_state = State::Menu;
@@ -183,26 +189,24 @@ void Game::procesEvents() {
 }
 
 void Game::handleCombat(float dt) {
-	// 1. Wrogowie atakują gracza
 	for (auto& enemy : m_enemies) {
-		if (enemy.m_attackTimer > 0.f) continue; // Wróg musi odpocząć
+		if (enemy.m_attackTimer > 0.f) continue; 
 
 		for (auto& unit : m_player.getUnits()) {
 			sf::Vector2f dir = enemy.getPosition() - unit.getPosition();
 			float dist = std::sqrt(dir.x * dir.x + dir.y * dir.y);
 
-			// Jeśli jednostka jest w zasięgu wroga
 			if (dist <= enemy.m_attackRange) {
-				unit.takeDamage(enemy.m_damage); // Zadajemy cios
-				enemy.m_attackTimer = enemy.m_attackCooldown; // Resetujemy timer wroga
-				break; // Uderzył jednego, nie sprawdza reszty w tej klatce
+				unit.takeDamage(enemy.m_damage); 
+				enemy.m_attackTimer = enemy.m_attackCooldown; 
+				break; 
 			}
 		}
 	}
 
-	// 2. Gracz atakuje wrogów
+
 	for (auto& unit : m_player.getUnits()) {
-		if (unit.m_attackTimer > 0.f) continue; // Jednostka odpoczywa
+		if (unit.m_attackTimer > 0.f) continue; 
 
 		for (auto& enemy : m_enemies) {
 			sf::Vector2f dir = unit.getPosition() - enemy.getPosition();
@@ -212,7 +216,6 @@ void Game::handleCombat(float dt) {
 				enemy.takeDamage(unit.m_damage);
 				unit.m_attackTimer = unit.m_attackCooldown;
 
-				// Super bajer: jeśli jednostka atakuje, niech przestanie iść
 				unit.stop();
 				break;
 			}
@@ -220,15 +223,12 @@ void Game::handleCombat(float dt) {
 	}
 }
 
-// Czyszczenie mapy z trupów
 void Game::removeDeadEntities() {
-	// Usuwamy martwych wrogów
 	m_enemies.erase(
 		std::remove_if(m_enemies.begin(), m_enemies.end(), [](const Enemy& e) { return e.isDead(); }),
 		m_enemies.end()
 	);
 
-	// Usuwamy martwe jednostki gracza
 	auto& units = m_player.getUnits();
 	units.erase(
 		std::remove_if(units.begin(), units.end(), [](const Unit& u) { return u.isDead(); }),
@@ -284,5 +284,4 @@ void Game::clampCameraToMap(float mapW, float mapH) {
 }
 
 void Game::drawUI() {
-	// Na razie pusto, ale tu będzie rysowane złoto, minimapa, itp.
 }

@@ -65,9 +65,8 @@ void Menu::update() {
 }
 
 void Menu::draw() {
-    // Sprawdź czy font jest załadowany
     if (m_font.getInfo().family.empty()) {
-        return;  // font niegotowy, nie rysuj
+        return; 
     }
 
     m_window.draw(m_title);

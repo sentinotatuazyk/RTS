@@ -144,11 +144,13 @@
     <ClCompile Include="map.cpp" />
     <ClCompile Include="menu.cpp" />
     <ClCompile Include="player.cpp" />
+    <ClCompile Include="ui_manager.cpp" />
     <ClCompile Include="unit.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="buildings.h" />
+    <ClInclude Include="ui_manager.h" />
     <ClInclude Include="utils.hpp" />
     <ClInclude Include="enemy.h" />
     <ClInclude Include="game.h" />

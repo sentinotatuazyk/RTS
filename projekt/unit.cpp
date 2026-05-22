@@ -108,6 +108,15 @@ sf::FloatRect Unit::getBounds() const
     return m_shape.getGlobalBounds();
 }
 
+std::pair<int,int> Unit::getHealth() const
+{
+    return { m_health, m_maxHealth };
+}
+
+UnitType Unit::getType() const {
+    return m_type;
+}
+
 void Unit::update(float dt) {
     if (m_attackTimer > 0.f) {
         m_attackTimer -= dt;

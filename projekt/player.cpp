@@ -32,6 +32,11 @@ std::vector<Unit>& Player::getUnits()
     return m_units;
 }
 
+const std::vector<Unit>& Player::getUnits() const
+{
+    return m_units;
+}
+
 void Player::addBuilding(sf::Vector2f position, BuildingType type)
 {
     switch (type) {
@@ -94,16 +99,13 @@ void Player::draw(sf::RenderWindow& window) {
 }
 
 void Player::handleEvent(const sf::Event& event, const sf::RenderWindow& window) {
-    // 1. Wciśnięcie lewego przycisku (Start zaznaczania)
     if (const auto* mousePressed = event.getIf<sf::Event::MouseButtonPressed>()) {
         if (mousePressed->button == sf::Mouse::Button::Left) {
             m_isDragging = true;
-            // Pobieramy pozycję myszki i zamieniamy na współrzędne świata
             m_startClick = window.mapPixelToCoords(mousePressed->position);
             m_selectionBox.setPosition(m_startClick);
             m_selectionBox.setSize({ 0.f, 0.f });
 
-            // Odznaczamy wszystkie jednostki na początku nowego kliknięcia
             for (auto& unit : m_units) {
                 unit.setSelected(false);
             }
@@ -118,21 +120,16 @@ void Player::handleEvent(const sf::Event& event, const sf::RenderWindow& window)
             }
         }
     }
-    // 2. Puszczenie lewego przycisku (Koniec zaznaczania)
     else if (const auto* mouseReleased = event.getIf<sf::Event::MouseButtonReleased>()) {
         if (mouseReleased->button == sf::Mouse::Button::Left) {
             m_isDragging = false;
 
-            // Prostokąt zaznaczenia
             sf::FloatRect selectionBounds = m_selectionBox.getGlobalBounds();
 
-            // Jeśli kliknięto w miejscu (zaznaczenie punktowe)
             if (selectionBounds.size.x < 2.f && selectionBounds.size.y < 2.f) {
-                // Rozszerzamy punkt do małego kwadracika, by łatwiej było trafić myszką
                 selectionBounds = sf::FloatRect({ m_startClick.x - 1.f, m_startClick.y - 1.f }, { 2.f, 2.f });
             }
 
-            // Sprawdzamy, które jednostki łapią się w prostokąt
             for (auto& unit : m_units) {
                 if (selectionBounds.findIntersection(unit.getBounds())) {
                     unit.setSelected(true);
@@ -140,11 +137,9 @@ void Player::handleEvent(const sf::Event& event, const sf::RenderWindow& window)
             }
         }
     }
-    // 3. Ruch myszką (Aktualizacja wielkości prostokąta)
     else if (const auto* mouseMoved = event.getIf<sf::Event::MouseMoved>()) {
         if (m_isDragging) {
             sf::Vector2f currentMouse = window.mapPixelToCoords(mouseMoved->position);
-            // Wielkość to po prostu różnica między obecną pozycją a startową
             m_selectionBox.setSize(currentMouse - m_startClick);
         }
     }

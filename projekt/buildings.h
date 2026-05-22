@@ -37,7 +37,7 @@ public:
     void update(float dt) override;
 };
 
-class Quarry : public Building {
+class  Quarry : public Building {
 public:
     Quarry(sf::Vector2f pos);
     virtual ~Quarry();

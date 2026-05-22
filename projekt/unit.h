@@ -4,6 +4,7 @@
 #include <SFML/System.hpp>
 #include <SFML/Graphics.hpp>
 #include <cmath>
+#include <utility>
 class Game;
 
 enum class UnitType {Worker, Warrior, Archer, Hero};
@@ -28,6 +29,8 @@ public:
 	void stop();
 
 	sf::FloatRect getBounds() const;
+	std::pair<int, int> getHealth() const;
+	UnitType getType() const;
 
 	void takeDamage(int dmg);
 	bool isDead() const;

@@ -6,7 +6,6 @@ Building::Building(sf::Vector2f pos, int hp) : m_position(pos), m_health(hp), m_
     m_shape.setPosition(m_position);
 }
 
-// Niezbędne dla wektora i DLL-ki
 Building::Building(const Building& other) = default;
 Building::~Building() = default;
 
@@ -28,7 +27,7 @@ void Quarry::update(float dt) {
     m_miningTimer -= dt;
     if (m_miningTimer <= 0.f) {
 		std::cout << "+5 kamienia zebrane przez Quarry!" << std::endl;
-        m_miningTimer = 1.f; // Resetujemy timer
+        m_miningTimer = 1.f; 
     }
 }
 
@@ -55,7 +54,7 @@ void Barracks::update(float dt) {
 
 void Barracks::startTraining() {
     if (!m_isTraining) {
-        m_trainingTimer = 3.f; // Czas treningu jednostki
+        m_trainingTimer = 3.f; 
         m_isTraining = true;
         std::cout << "Rozpoczęto trening jednostki w Barracks!" << std::endl;
     }

@@ -7,6 +7,7 @@
 #include "menu.h"
 #include "map.h"
 #include "enemy.h"
+#include "ui_manager.h"
 
 
 class EXPORT_API Game {
@@ -44,7 +45,7 @@ private:
 	void handleCameraInput(float deltaTime);
 	void clampCameraToMap(float mapW, float mapH);
 	
-
+	UIManager m_ui;
 	void drawUI();
 
 
