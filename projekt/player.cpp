@@ -1,6 +1,7 @@
 #include "player.h"
 #include <cmath>
 #include <algorithm>
+#include "utils.hpp"
 
 // W konstruktorze ustawiamy już tylko złoto na 0 (lub inną wartość startową)
 Player::Player() : m_gold(0) {
@@ -33,8 +34,17 @@ std::vector<Unit>& Player::getUnits()
 
 void Player::addBuilding(sf::Vector2f position, BuildingType type)
 {
-    Building newBuilding(position, type);
-    m_buildings.push_back(newBuilding);
+    switch (type) {
+        case BuildingType::TownHall:
+            m_buildings.push_back(std::make_unique<TownHall>(position));
+            break;
+        case BuildingType::Quarry:
+            m_buildings.push_back(std::make_unique<Quarry>(position));
+            break;
+        case BuildingType::Barracks:
+            m_buildings.push_back(std::make_unique<Barracks>(position));
+			break;
+    }
 }
 
 void Player::update(float deltaTime, const Map& map) {
@@ -42,7 +52,7 @@ void Player::update(float deltaTime, const Map& map) {
     float unitRadius = 15.f;
 
     for (auto& building : m_buildings) {
-        building.update(deltaTime);
+        building->update(deltaTime);
     }
 
     for (auto& unit : m_units) {
@@ -50,66 +60,24 @@ void Player::update(float deltaTime, const Map& map) {
 
         sf::Vector2f pos = unit.getPosition();
 
-        int gridX = static_cast<int>(pos.x / tileSize);
-        int gridY = static_cast<int>(pos.y / tileSize);
-
-        for (int y = gridY - 1; y <= gridY + 1; ++y) {
-            for (int x = gridX - 1; x <= gridX + 1; ++x) {
-                if (x < 0 || y < 0) continue;
-                TileType type = map.getTile(x, y);
-
-                if (type == TileType::Wall || type == TileType::Water) {
-                    float tileLeft = x * tileSize;
-                    float tileTop = y * tileSize;
-                    float tileRight = tileLeft + tileSize;
-                    float tileBottom = tileTop + tileSize;
-
-                    float closestX = std::max(tileLeft, std::min(pos.x, tileRight));
-                    float closestY = std::max(tileTop, std::min(pos.y, tileBottom));
-
-                    float distX = pos.x - closestX;
-                    float distY = pos.y - closestY;
-
-                    float distanceSquared = distX * distX + distY * distY;
-
-                    if (distanceSquared < unitRadius * unitRadius) {
-                        float distance = std::sqrt(distanceSquared);
-
-                        if (distance > 0.0001f) {
-                            float overlap = unitRadius - distance;
-                            pos.x += (distX / distance) * overlap;
-                            pos.y += (distY / distance) * overlap;
-                        }
-                        unit.setPosition(pos);
-                        //unit.stop();
-                    }
-                }
-            }
-        }
+        applyMapCollision(pos, unit.getRadius(), map);
         unit.setPosition(pos);
     }
 
 
-    for (size_t i = 0; i < m_units.size(); ++i) {
-        for (size_t j = i + 1; j < m_units.size(); ++j ) {
+	for (size_t i = 0; i < m_units.size(); ++i) {
+		for (size_t j = i + 1; j < m_units.size(); ++j ) {
 
-            sf::Vector2f pos1 = m_units[i].getPosition();
-            sf::Vector2f pos2 = m_units[j].getPosition();
+			sf::Vector2f pos1 = m_units[i].getPosition();
+			sf::Vector2f pos2 = m_units[j].getPosition();
+			float r1 = m_units[i].getRadius();
+			float r2 = m_units[j].getRadius();
 
-            sf::Vector2f direction = pos1 - pos2;
-
-            float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
-            float minDist = 31.f;
-
-            if (distance < minDist && distance > 0.0001f) {
-                float overlap = minDist - distance;
-
-                sf::Vector2f pushDir = direction / distance;
-                m_units[i].setPosition(pos1 + pushDir * (overlap / 2.f));
-                m_units[j].setPosition(pos2 - pushDir * (overlap / 2.f));
-            }
-        }
-    }
+			applyCircleCollision(pos1, pos2, r1, r2);
+			m_units[i].setPosition(pos1);
+			m_units[j].setPosition(pos2);
+		}
+	}
 }
 
 void Player::draw(sf::RenderWindow& window) {
@@ -117,7 +85,7 @@ void Player::draw(sf::RenderWindow& window) {
         unit.draw(window);
     }
     for (auto& building : m_buildings) {
-        building.draw(window);
+        building->draw(window);
     }
 
     if (m_isDragging) {

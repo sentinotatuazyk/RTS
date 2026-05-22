@@ -78,7 +78,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_BUILD;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -145,9 +145,11 @@
     <ClCompile Include="menu.cpp" />
     <ClCompile Include="player.cpp" />
     <ClCompile Include="unit.cpp" />
+    <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="buildings.h" />
+    <ClInclude Include="utils.hpp" />
     <ClInclude Include="enemy.h" />
     <ClInclude Include="game.h" />
     <ClInclude Include="map.h" />
@@ -157,6 +159,9 @@
   </ItemGroup>
   <ItemGroup>
     <Font Include="resources\geistmono_light.ttf" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="resources\skull.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

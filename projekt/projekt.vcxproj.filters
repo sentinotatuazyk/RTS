@@ -39,6 +39,9 @@
     <ClCompile Include="enemy.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
+    <ClCompile Include="utils.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="game.h">
@@ -62,10 +65,18 @@
     <ClInclude Include="enemy.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
+    <ClInclude Include="utils.hpp">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Font Include="resources\geistmono_light.ttf">
       <Filter>Pliki zasobów</Filter>
     </Font>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="resources\skull.png">
+      <Filter>Pliki zasobów</Filter>
+    </Image>
   </ItemGroup>
 </Project>

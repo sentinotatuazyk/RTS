@@ -2,10 +2,12 @@
 
 #include <vector>
 #include <SFML/Graphics.hpp>
+#include <memory>
 #include "unit.h"
 #include "buildings.h"
 #include "API.h"
 #include "map.h"
+
 
 class EXPORT_API Player {
 public:
@@ -25,7 +27,7 @@ public:
 private:
     int m_gold;
     std::vector<Unit> m_units;
-    std::vector<Building> m_buildings;
+    std::vector<std::unique_ptr<Building>> m_buildings;
 
     sf::RectangleShape m_selectionBox;
     sf::Vector2f m_startClick;
