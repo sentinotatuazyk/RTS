@@ -117,6 +117,15 @@ void Enemy::stop()
     m_targetPosition = m_position;
 }
 
+void Enemy::setState(EnemyState state){
+	m_state = state;
+}
+
+EnemyState Enemy::getState() const
+{
+    return m_state;
+}
+
 void Enemy::takeDamage(int dmg) {
     m_health -= dmg;
     if (m_health < 0) m_health = 0;

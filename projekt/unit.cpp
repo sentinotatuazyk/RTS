@@ -1,4 +1,6 @@
 #include "unit.h"
+#include "unit.h"
+#include "unit.h"
 #include "utils.hpp"
 // Inicjalizujemy podstawowe parametry
 Unit::Unit() : m_speed(150.f), m_health(100), m_isMoving(false), m_isDead(false) {
@@ -103,6 +105,11 @@ void Unit::stop()
     m_targetPosition = m_position;
 }
 
+void Unit::setState(UnitState state)
+{
+    m_state = state;
+}
+
 sf::FloatRect Unit::getBounds() const
 {
     return m_shape.getGlobalBounds();
@@ -115,6 +122,11 @@ std::pair<int,int> Unit::getHealth() const
 
 UnitType Unit::getType() const {
     return m_type;
+}
+
+UnitState Unit::getState() const
+{
+    return m_state;
 }
 
 void Unit::update(float dt) {
@@ -154,6 +166,7 @@ void Unit::takeDamage(int dmg) {
 bool Unit::isDead() const {
 	return m_health <= 0;
 }
+
 
 
 

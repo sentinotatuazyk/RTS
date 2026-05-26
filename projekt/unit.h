@@ -8,6 +8,7 @@
 class Game;
 
 enum class UnitType {Worker, Warrior, Archer, Hero};
+enum class UnitState {Aggressive, Passive, Neutral };
 
 class EXPORT_API Unit 
 {
@@ -28,12 +29,16 @@ public:
 	float getRadius() const;
 	void stop();
 
+	void setState(UnitState state);
+
 	sf::FloatRect getBounds() const;
 	std::pair<int, int> getHealth() const;
 	UnitType getType() const;
+	UnitState getState() const;
 
 	void takeDamage(int dmg);
 	bool isDead() const;
+	
 	
 private:
 	sf::Vector2f m_position;
@@ -41,6 +46,7 @@ private:
 	
 
 	UnitType m_type;
+	UnitState m_state = UnitState::Neutral;
 
 	bool m_isMoving = false;
 	bool m_isDead = false;

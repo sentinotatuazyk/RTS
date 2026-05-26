@@ -108,7 +108,7 @@
       </PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>P:\SFML-3.1.0\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>P:\SFML-3.1.0\include;P:\projekt\DDL</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -127,7 +127,7 @@
       </PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>P:\SFML-3.1.0\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>P:\SFML-3.1.0\include;P:\projekt\DDL</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -137,6 +137,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\DDL\settings.cpp" />
     <ClCompile Include="buildings.cpp" />
     <ClCompile Include="enemy.cpp" />
     <ClCompile Include="game.cpp" />
@@ -147,17 +148,6 @@
     <ClCompile Include="ui_manager.cpp" />
     <ClCompile Include="unit.cpp" />
     <ClCompile Include="utils.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="buildings.h" />
-    <ClInclude Include="ui_manager.h" />
-    <ClInclude Include="utils.hpp" />
-    <ClInclude Include="enemy.h" />
-    <ClInclude Include="game.h" />
-    <ClInclude Include="map.h" />
-    <ClInclude Include="menu.h" />
-    <ClInclude Include="player.h" />
-    <ClInclude Include="unit.h" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="resources\geistmono_light.ttf" />

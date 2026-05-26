@@ -2,7 +2,7 @@
 #include <SFML/Graphics.hpp>
 #include "API.h"
 
-enum class MenuAction { None, StartGame, ExitGame };
+enum class MenuAction { None, StartGame, Settings, ExitGame };
 
 class EXPORT_API Menu {
 public:
@@ -12,6 +12,7 @@ public:
 	MenuAction handleEvent(const sf::Event& event);
 	void update();
 	void draw();
+	void rebuildLayout();
 
 private:
 	void updateSelection();
@@ -20,6 +21,7 @@ private:
 	sf::Font m_font;
 	sf::Text m_title;
 	sf::Text m_start;
+	sf::Text m_settings;
 	sf::Text m_exit;
 
 	int m_selected = 0;

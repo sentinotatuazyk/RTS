@@ -3,7 +3,7 @@
 #include "API.h"
 #include <SFML/Graphics.hpp>
 
-enum class BuildingType { TownHall, Quarry, Barracks };
+enum class EXPORT_API BuildingType { TownHall, Quarry, Barracks };
 
 class Building {
 public:
@@ -37,7 +37,7 @@ public:
     void update(float dt) override;
 };
 
-class  Quarry : public Building {
+class Quarry : public Building {
 public:
     Quarry(sf::Vector2f pos);
     virtual ~Quarry();

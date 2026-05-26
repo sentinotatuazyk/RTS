@@ -1,4 +1,5 @@
 #include "game.h"
+#include "game.h"
 #include "utils.hpp"
 #include <vector>
 #include <algorithm>
@@ -7,10 +8,15 @@ constexpr unsigned int mX = 200; //  sf::VideoMode::getDesktopMode().size.x / 40
 constexpr unsigned int mY = 200; //  sf::VideoMode::getDesktopMode().size.y / 40 + 1
 
 Game::Game() :
-	m_window(sf::VideoMode::getDesktopMode(), "RTS Game"),
+	m_window(sf::VideoMode({ 1280, 720 }), "RTS Game", sf::Style::Titlebar | sf::Style::Close),
 	m_menu(m_window),
 	m_map(mX, mY, 40.f) {
-	m_window.setFramerateLimit(60);
+	m_window.setFramerateLimit(144);
+	m_settings.fpsLimit = 144;
+	m_settings.fullscreen = false;
+	m_settings.resolutionIndex = 0;
+
+	m_settingsScreen.init("geistmono_light.ttf");
 	float centerX = m_window.getSize().x / 2.f;
 	float centerY = m_window.getSize().y / 2.f;
 
@@ -95,16 +101,19 @@ void Game::update(float deltaTime) {
 	if (m_state == State::Menu) {
 		m_menu.update();
 	}
+	else if (m_state == State::Settings) {
+		(void)deltaTime; // na razie nic tu nie ma, ale może być przydatne
+	}
 	else if (m_state == State::Playing) {
 		handleCameraInput(deltaTime);
-		//clampCameraToMap(m_map.getSize().first, m_map.getSize().second);
 		m_map.update(deltaTime);
 		m_player.update(deltaTime,m_map);
+		m_ui.update(deltaTime);
 		for (auto& enemy : m_enemies) {
 			enemy.update(deltaTime);
 		}
 		handleEnemyCollisions();
-		handleAI();
+		handleAi();
 		handleCombat(deltaTime);
 		removeDeadEntities();
 	}
@@ -118,6 +127,10 @@ void Game::render() {
 		m_window.setView(m_window.getDefaultView());
 		m_menu.draw();
 	}
+	else if (m_state == State::Settings) {
+		m_window.setView(m_window.getDefaultView());
+		m_settingsScreen.draw(m_window);
+	}
 	else if (m_state == State::Playing) {
 		m_window.setView(m_view);
 		m_map.drawVisible(m_window,m_view);  
@@ -128,9 +141,6 @@ void Game::render() {
 		m_window.setView(m_window.getDefaultView());
 		m_ui.draw(m_window,m_player);
 	}
-
-	
-
 	m_window.display();
 }
 
@@ -140,9 +150,19 @@ void Game::procesEvents() {
 			m_window.close();
 			return;
 		}
+
+		if (const auto* r = event->getIf<sf::Event::Resized>()) {
+			sf::View dv;
+			dv.setSize({ static_cast<float>(r->size.x), static_cast<float>(r->size.y) });
+			dv.setCenter(dv.getSize() * 0.5f);
+			m_window.setView(dv);
+
+			m_ui.forceRebuild(m_window, m_player);
+		}
 		if (m_state == State::Menu) {
 			MenuAction action = m_menu.handleEvent(*event);
 			if (action == MenuAction::ExitGame) m_window.close();
+			else if (action == MenuAction::Settings) m_state = State::Settings;
 			else if (action == MenuAction::StartGame) m_state = State::Playing;
 		}
 		else if (m_state == State::Playing) {
@@ -164,6 +184,15 @@ void Game::procesEvents() {
 						}
 					}
 				}
+				else if (keyPressed->scancode == sf::Keyboard::Scancode::Num1) {
+					for (auto& u : m_player.getUnits()) if (u.isSelected()) u.setState(UnitState::Aggressive);
+				}
+				else if (keyPressed->scancode == sf::Keyboard::Scancode::Num2) {
+					for (auto& u : m_player.getUnits()) if (u.isSelected()) u.setState(UnitState::Passive);
+				}
+				else if (keyPressed->scancode == sf::Keyboard::Scancode::Num3) {
+					for (auto& u : m_player.getUnits()) if (u.isSelected()) u.setState(UnitState::Neutral);
+				}
 			}
 			if (const auto* mouseInteracted = event->getIf<sf::Event::MouseWheelScrolled>()) {
 				float factor = (mouseInteracted->delta > 0) ? 0.9f : 1.1f;
@@ -182,8 +211,21 @@ void Game::procesEvents() {
 					m_draggingCamera = false;
 				}
 			}
+		}
+		else if (m_state == State::Settings) {
+			m_window.setView(m_window.getDefaultView());
 
+			SettingsAction sa = m_settingsScreen.handleEvent(*event, m_window);
 
+			if (sa == SettingsAction::Back) {
+				m_state = State::Menu;
+
+			}
+			else if (sa == SettingsAction::Apply) {
+				m_settings = m_settingsScreen.edited();
+				applySettingsToWindows();
+				m_state = State::Menu;
+			}
 		}
 	}
 }
@@ -236,10 +278,43 @@ void Game::removeDeadEntities() {
 	);
 }
 
-void Game::handleAI() {
-	basicAI(m_enemies, m_player.getUnits(), 300.f, false);
+void Game::handleAi() {
+	std::vector<Unit*> uAgg, uPas, uNeu;
+	for (auto& unit : m_player.getUnits()) {
+		switch (unit.getState()) {
+		case UnitState::Aggressive:
+			uAgg.push_back(&unit);
+			break;
+		case UnitState::Passive:
+			uPas.push_back(&unit);
+			break;
+		case UnitState::Neutral:
+			uNeu.push_back(&unit);
+			break;
+		}
+	}
+	std::vector<Enemy*> eAgg, ePas, eNeu;
+	for (auto& enemy : m_enemies) {
+		switch (enemy.getState()) {
+		case EnemyState::Aggressive:
+			eAgg.push_back(&enemy);
+			break;
+		case EnemyState::Passive:
+			ePas.push_back(&enemy);
+			break;
+		case EnemyState::Neutral:
+			eNeu.push_back(&enemy);
+			break;
+		}
+	}
 
-	basicAI(m_player.getUnits(), m_enemies, 300.f, true);
+	//AI enemy
+	basicAI(eAgg, m_player.getUnits(), 300.f, false);
+	basicAI(ePas, m_player.getUnits(), 200.f, false, true);
+
+	//AI player
+	basicAI(uAgg, m_enemies, 350.f, true);   // skipIfMoving=true np. żeby nie przerywały marszu
+	basicAI(uPas, m_enemies, 250.f, true);   // Passive: mniejszy zasięg aggro albo wcale
 }
 
 
@@ -283,5 +358,31 @@ void Game::clampCameraToMap(float mapW, float mapH) {
 	m_view.setCenter(center);
 }
 
-void Game::drawUI() {
+void Game::applySettingsToWindows()
+{
+	sf::VideoMode vm;
+
+	sf::State state;
+	unsigned int style = sf::Style::Default;
+
+	if (m_settings.fullscreen) {
+		vm = sf::VideoMode::getDesktopMode();
+		state = sf::State::Fullscreen;
+
+		style = sf::Style::None;
+	}
+	else {
+		sf::Vector2u res = m_settings.chosenResolutionOrDesktop();
+		vm = sf::VideoMode(res);
+		state = sf::State::Windowed;
+
+		style = sf::Style::Default;
+	}
+
+	m_window.create(vm, "RTS Game", style, state);
+	if (m_settings.fpsLimit > 0) {
+		m_window.setFramerateLimit(m_settings.fpsLimit);
+	}
+	m_view = m_window.getDefaultView();
+	m_ui.forceRebuild(m_window, m_player);
 }

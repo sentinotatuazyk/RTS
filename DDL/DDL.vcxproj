@@ -111,8 +111,7 @@
     <PostBuildEvent>
       <Command>copy /Y "$(ProjectDir)*.h" "P:\include"
 copy /Y "$(SolutionDir)x64\Debug\*.dll" "P:\bin"
-copy /Y "$(SolutionDir)x64\Debug\*lib" "P:\lib"
-copy /Y "$(SolutionDir)x64\Debug\*.exe" "P:\bin"</Command>
+copy /Y "$(SolutionDir)x64\Debug\*lib" "P:\lib"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -130,7 +129,20 @@ copy /Y "$(SolutionDir)x64\Debug\*.exe" "P:\bin"</Command>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\projekt\buildings.h" />
+    <ClInclude Include="..\projekt\enemy.h" />
+    <ClInclude Include="..\projekt\game.h" />
+    <ClInclude Include="..\projekt\map.h" />
+    <ClInclude Include="..\projekt\menu.h" />
+    <ClInclude Include="..\projekt\player.h" />
+    <ClInclude Include="..\projekt\ui_manager.h" />
+    <ClInclude Include="..\projekt\unit.h" />
+    <ClInclude Include="..\projekt\utils.hpp" />
     <ClInclude Include="API.h" />
+    <ClInclude Include="settings.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="FileName.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -4,6 +4,7 @@
 class Game;
 
 enum class EnemyType { Goblin, Orc, Troll };
+enum class EnemyState { Aggressive, Passive, Neutral  };
 
 class EXPORT_API Enemy
 {
@@ -22,6 +23,9 @@ public:
 	void moveTo(sf::Vector2f target);
 	float getRadius() const;
 	void stop();
+	void setState(EnemyState state);
+
+	EnemyState getState() const;
 
 	void takeDamage(int dmg);
 	bool isDead() const;
@@ -32,6 +36,7 @@ private:
 	sf::Texture m_texture;
 
 	EnemyType m_type;
+	EnemyState m_state = EnemyState::Aggressive;
 
 	bool m_isMoving = false;
 	bool m_isDead = false;
