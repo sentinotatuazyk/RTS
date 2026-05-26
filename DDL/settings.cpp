@@ -1,6 +1,7 @@
 #include "settings.h"
 #include <sstream>
 #include <algorithm>
+#include <iostream>
 
 SettingsScreen::SettingsScreen() :
     m_title(m_font),
@@ -40,6 +41,50 @@ sf::Vector2u AppSettings::chosenResolutionOrDesktop() const {
     const auto& p = presets();
     int idx = std::clamp(resolutionIndex, 0, static_cast<int>(p.size()) - 1);
     return p[idx];
+}
+
+bool AppSettings::saveToFile(const std::string& path) const {
+	std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::trunc);
+    if (!file.is_open()) {
+        std::cout << "NIE MOŻNA OTWORZYĆ PLIKU DO ZAPISU: " << path << std::endl;
+        return false;
+    }
+
+	file.write(reinterpret_cast<const char*>(&resolutionIndex), sizeof(resolutionIndex));
+    file.write(reinterpret_cast<const char*>(&fullscreen), sizeof(fullscreen));
+    file.write(reinterpret_cast<const char*>(&fpsLimit), sizeof(fpsLimit));
+
+	std::cout << "ZAPISANO DO: " << std::filesystem::absolute(path) << std::endl;
+    return file.good();
+}
+
+bool AppSettings::loadFromFile(const std::string& path) {
+	std::ifstream file(path, std::ios::in | std::ios::binary);
+    if (!file.is_open()) {
+		std::cout << "NIE MOŻNA OTWORZYĆ PLIKU DO ODCZYTU: " << path << std::endl;
+        return false;
+    }
+	int tmpResIndex;
+    bool tmpFs;
+	unsigned int tmpFps;
+
+    file.read(reinterpret_cast<char*>(&tmpResIndex),sizeof(tmpResIndex));
+    file.read(reinterpret_cast<char*>(&tmpFs), sizeof(tmpFs));
+    file.read(reinterpret_cast<char*>(&tmpFps), sizeof(tmpFps));
+
+    if (!file.good()) return false;
+
+	const int maxIdx = static_cast<int>(presets().size()) - 1;
+    if (tmpResIndex < 0 || tmpResIndex > maxIdx) return false;
+    if (tmpFps > 240 || (tmpFps != 0 && tmpFps < 30)) return false;
+
+	resolutionIndex = tmpResIndex;
+	fullscreen = tmpFs;
+    fpsLimit = tmpFps;
+
+	std::cout << "WCZYTANO Z: " << std::filesystem::absolute(path) << std::endl;
+
+	return true;
 }
 
 bool SettingsScreen::init(const std::string& fontPath) {

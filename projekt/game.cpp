@@ -12,10 +12,15 @@ Game::Game() :
 	m_menu(m_window),
 	m_map(mX, mY, 40.f) {
 	m_window.setFramerateLimit(144);
-	m_settings.fpsLimit = 144;
-	m_settings.fullscreen = false;
-	m_settings.resolutionIndex = 0;
+	if (!m_settings.loadFromFile("settings.bin")) {
+		m_settings.fpsLimit = 144;
+		m_settings.fullscreen = false;
+		m_settings.resolutionIndex = 0;
+		m_settings.saveToFile("settings.bin");
+	}
 
+	applySettingsToWindows();
+	
 	m_settingsScreen.init("geistmono_light.ttf");
 	float centerX = m_window.getSize().x / 2.f;
 	float centerY = m_window.getSize().y / 2.f;
@@ -223,6 +228,7 @@ void Game::procesEvents() {
 			}
 			else if (sa == SettingsAction::Apply) {
 				m_settings = m_settingsScreen.edited();
+				m_settings.saveToFile("settings.bin");
 				applySettingsToWindows();
 				m_state = State::Menu;
 			}

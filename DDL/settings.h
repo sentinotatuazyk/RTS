@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <optional>
+#include <fstream>
 
 struct AppSettings {
     // Presety rozdzielczości (tylko windowed)
@@ -18,6 +19,9 @@ struct AppSettings {
     static const std::vector<sf::Vector2u>& presets();
     static std::string presetToString(sf::Vector2u r);
     sf::Vector2u chosenResolutionOrDesktop() const;
+
+	bool saveToFile(const std::string& path) const;
+	bool loadFromFile(const std::string& path);
 };
 
 enum class SettingsAction {
