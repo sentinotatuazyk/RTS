@@ -3,20 +3,31 @@
 #include "utils.hpp"
 #include <vector>
 #include <algorithm>
+#include <random>
 
-constexpr unsigned int mX = 200; //  sf::VideoMode::getDesktopMode().size.x / 40 + 1
-constexpr unsigned int mY = 200; //  sf::VideoMode::getDesktopMode().size.y / 40 + 1
+constexpr unsigned int mX = 150; //  sf::VideoMode::getDesktopMode().size.x / 40 + 1
+constexpr unsigned int mY = 100; //  sf::VideoMode::getDesktopMode().size.y / 40 + 1
+constexpr float tS = 40.f;
 
 Game::Game() :
 	m_window(sf::VideoMode({ 1280, 720 }), "RTS Game", sf::Style::Titlebar | sf::Style::Close),
 	m_menu(m_window),
-	m_map(mX, mY, 40.f) {
+	m_map(mX, mY, tS, std::random_device{}()), 
+	m_fpsText(m_fpsFont){
 	m_window.setFramerateLimit(144);
 	if (!m_settings.loadFromFile("settings.bin")) {
 		m_settings.fpsLimit = 144;
 		m_settings.fullscreen = false;
+		m_settings.showFps = false;
 		m_settings.resolutionIndex = 0;
 		m_settings.saveToFile("settings.bin");
+	}
+
+	if (m_fpsFont.openFromFile("geistmono_light.ttf")) {
+		m_fpsText.setFont(m_fpsFont);
+		m_fpsText.setCharacterSize(16);
+		m_fpsText.setFillColor(sf::Color::Green);
+		m_fpsText.setPosition({ 10.f, 10.f });  // lewy górny róg
 	}
 
 	applySettingsToWindows();
@@ -28,21 +39,22 @@ Game::Game() :
 	m_view = m_window.getDefaultView();
 
 	m_ui.init("geistmono_light.ttf");
+	m_ui.setMap(&m_map);
 	m_ui.forceRebuild(m_window, m_player);
 
-	m_player.addBuilding({ centerX, centerY }, BuildingType::TownHall);
+	m_player.addBuilding(findValidSpawnPosition(centerX, centerY), BuildingType::TownHall);
 
-	m_player.addUnit({ centerX + 80.f, centerY - 50.f }, UnitType::Worker);
-	m_player.addUnit({ centerX + 80.f, centerY + 50.f }, UnitType::Worker);
+	m_player.addUnit(findValidSpawnPosition(centerX + 80.f, centerY - 50.f), UnitType::Worker);
+	m_player.addUnit(findValidSpawnPosition(centerX + 80.f, centerY + 50.f), UnitType::Worker);
 
-	m_player.addUnit({ centerX + 150.f, centerY }, UnitType::Warrior);
-	m_player.addUnit({ centerX + 200.f, centerY }, UnitType::Archer);
+	m_player.addUnit(findValidSpawnPosition(centerX + 150.f, centerY), UnitType::Warrior);
+	m_player.addUnit(findValidSpawnPosition(centerX + 200.f, centerY), UnitType::Archer);
+	m_player.addUnit(findValidSpawnPosition(centerX + 250.f, centerY), UnitType::Hero);
 
-	m_player.addUnit({ centerX + 250.f, centerY }, UnitType::Hero);
-
-	addEnemy({ 1000.f, 200.f }, EnemyType::Goblin);
-	addEnemy({ 1050.f, 200.f }, EnemyType::Orc);
-	addEnemy({ 1000.f, 250.f }, EnemyType::Troll);
+	// Wrogowie — daleko od gracza, na lądzie
+	addEnemy(findValidSpawnPosition(1000.f, 200.f), EnemyType::Goblin);
+	addEnemy(findValidSpawnPosition(1050.f, 200.f), EnemyType::Orc);
+	addEnemy(findValidSpawnPosition(1000.f, 250.f), EnemyType::Troll);
 }
 
 Game::~Game()
@@ -57,6 +69,34 @@ void Game::run() {
 		update(deltaTime);
 		render();
 	}
+}
+
+sf::Vector2f Game::findValidSpawnPosition(float pX, float pY) {
+	unsigned int tileX = static_cast<unsigned int>(pX / tS);
+	unsigned int tileY = static_cast<unsigned int>(pY / tS);
+
+	if (m_map.getTile(tileX, tileY) != TileType::Water && m_map.getTile(tileX, tileY) != TileType::Mountain) {
+		return { pX, pY };
+	}
+
+	for (int r = 1; r < 50; ++r) {
+		for (int dy = -r; dy <= r; ++dy) {
+			for (int dx = -r; dx <= r; ++dx) {
+				if (std::abs(dx) != r && std::abs(dy) != r) continue;
+				
+				int checkX = static_cast<int>(tileX) + dx;
+				int checkY = static_cast<int>(tileY) + dy;
+
+				if (checkX < 0 || checkX >= static_cast<int>(tileX) ||
+					checkY < 0 || checkY >= static_cast<int>(tileY)) continue;
+
+				if (m_map.getTile(checkX, checkY) != TileType::Water || m_map.getTile(tileX, tileY) != TileType::Mountain) {
+					return { static_cast<float>(checkX) * tS + 20.f, static_cast<float>(checkY) * tS + 20.f };
+				}
+			}
+		}
+	}
+	return { static_cast<float>(mX) * tS / 2.f , static_cast<float>(mY) * tS / 2.f };
 }
 
 void Game::addEnemy(sf::Vector2f position, EnemyType type)
@@ -103,6 +143,20 @@ void Game::handleEnemyCollisions()
 }
 
 void Game::update(float deltaTime) {
+	m_fpsUpdateTimer += deltaTime;
+	m_frameCount++;
+
+	if (m_fpsUpdateTimer >= 0.25f) {  // aktualizuj co 0.25 sekundy
+		m_currentFps = static_cast<float>(m_frameCount) / m_fpsUpdateTimer;
+		m_frameCount = 0;
+		m_fpsUpdateTimer = 0.f;
+
+		// Aktualizuj tekst tylko jeśli showFps jest włączone
+		if (m_settings.showFps) {
+			m_fpsText.setString(std::to_string(static_cast<int>(m_currentFps)) + " FPS");
+		}
+	}
+
 	if (m_state == State::Menu) {
 		m_menu.update();
 	}
@@ -111,6 +165,11 @@ void Game::update(float deltaTime) {
 	}
 	else if (m_state == State::Playing) {
 		handleCameraInput(deltaTime);
+
+		// Ogranicz kamerę do granic mapy
+		sf::FloatRect mapBounds = m_map.getMapBounds();
+		clampCameraToMap(mapBounds.size.x, mapBounds.size.y);
+
 		m_map.update(deltaTime);
 		m_player.update(deltaTime,m_map);
 		m_ui.update(deltaTime);
@@ -127,7 +186,7 @@ void Game::update(float deltaTime) {
 
 
 void Game::render() {
-	m_window.clear();
+	m_window.clear(sf::Color(20,20,40));
 	if (m_state == State::Menu) {
 		m_window.setView(m_window.getDefaultView());
 		m_menu.draw();
@@ -137,6 +196,9 @@ void Game::render() {
 		m_settingsScreen.draw(m_window);
 	}
 	else if (m_state == State::Playing) {
+		sf::FloatRect mapBounds = m_map.getMapBounds();
+		clampCameraToMap(mapBounds.size.x, mapBounds.size.y);
+
 		m_window.setView(m_view);
 		m_map.drawVisible(m_window,m_view);  
 		m_player.draw(m_window); 
@@ -144,7 +206,11 @@ void Game::render() {
 			enemy.draw(m_window);
 		}
 		m_window.setView(m_window.getDefaultView());
-		m_ui.draw(m_window,m_player);
+		m_ui.draw(m_window,m_player, m_view);
+
+		if (m_settings.showFps) {
+			m_window.draw(m_fpsText);
+		}
 	}
 	m_window.display();
 }
@@ -167,7 +233,7 @@ void Game::procesEvents() {
 		if (m_state == State::Menu) {
 			MenuAction action = m_menu.handleEvent(*event);
 			if (action == MenuAction::ExitGame) m_window.close();
-			else if (action == MenuAction::Settings) m_state = State::Settings;
+			else if (action == MenuAction::Settings) { m_settingsScreen.open(m_settings); m_state = State::Settings; }
 			else if (action == MenuAction::StartGame) m_state = State::Playing;
 		}
 		else if (m_state == State::Playing) {
@@ -353,13 +419,26 @@ void Game::clampCameraToMap(float mapW, float mapH) {
 	sf::Vector2f center = m_view.getCenter();
 	sf::Vector2f half = m_view.getSize() * 0.5f;
 
+	// Nie pozwól wyjechać poza mapę
 	float minX = half.x;
 	float minY = half.y;
 	float maxX = mapW - half.x;
 	float maxY = mapH - half.y;
 
-	center.x = std::max(minX, std::min(center.x, maxX));
-	center.y = std::max(minY, std::min(center.y, maxY));
+	// Jeśli widok jest większy niż mapa, wyśrodkuj
+	if (maxX < minX) {
+		center.x = mapW / 2.0f;
+	}
+	else {
+		center.x = std::max(minX, std::min(center.x, maxX));
+	}
+
+	if (maxY < minY) {
+		center.y = mapH / 2.0f;
+	}
+	else {
+		center.y = std::max(minY, std::min(center.y, maxY));
+	}
 
 	m_view.setCenter(center);
 }

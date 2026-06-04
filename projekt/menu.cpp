@@ -57,7 +57,7 @@ MenuAction Menu::handleEvent(const sf::Event& event) {
         }
         else if (keyPressed->scancode == sf::Keyboard::Scancode::Enter) {
             if (m_selected == 0) return MenuAction::StartGame;
-            if (m_selected == 1) return MenuAction::Settings; 
+            if (m_selected == 1) {  return MenuAction::Settings; }
 			if (m_selected == 2) return MenuAction::ExitGame;
         }
     }

@@ -28,7 +28,7 @@ bool applyMapCollision(sf::Vector2f& pos, float radius, const Map& map) {
 		for (int x = gridX - 1; x <= gridX + 1; ++x) {
 			if (x < 0 || y < 0) continue;
 			TileType type = map.getTile(x, y);
-			if (type == TileType::Wall || type == TileType::Water) {
+			if (type == TileType::Mountain || type == TileType::Water) {
 				float tileLeft = x * tileSize;
 				float tileTop = y * tileSize;
 				float tileRight = tileLeft + tileSize;

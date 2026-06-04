@@ -2,6 +2,8 @@
 
 #include "player.h"
 #include "unit.h"
+#include "map.h"
+#include "enemy.h"
 #include "utils.hpp"  // toString(UnitType)
 
 #include <sstream>
@@ -24,6 +26,10 @@ bool UIManager::init(const std::string& fontPath) {
     return true;
 }
 
+void UIManager::setMap(const Map* map) {
+    m_mapRef = map;
+}
+
 std::size_t UIManager::computeSelectionHash(const Player& player) const {
     std::size_t h = 0;
     const auto& units = player.getUnits();
@@ -43,8 +49,9 @@ void UIManager::layoutPanels(const sf::RenderWindow& window) {
     const float colW = W / 5.f;
 
     m_infoPanel.bounds = sf::FloatRect({ 0.f, top }, { colW, m_panelHeight });
+	m_resourcesPanel.bounds = sf::FloatRect({ colW + 10.f, top }, { colW / 2, m_panelHeight });
     m_actionsPanel.bounds = sf::FloatRect({ colW * 2.f + 1.f, top }, { colW, m_panelHeight });
-    m_mapPanel.bounds = sf::FloatRect({ W - colW, top }, { colW, m_panelHeight });
+    m_mapPanel.bounds = sf::FloatRect({ W - colW/1.5f, H - colW/1.5f }, { colW / 1.5f , colW/ 1.5f});
 }
 
 void UIManager::rebuildInfoPanel(const sf::RenderWindow&, Player&) {
@@ -90,6 +97,11 @@ void UIManager::rebuildMapPanel(const sf::RenderWindow&, Player&) {
     // placeholder; minimapa później
 }
 
+void UIManager::rebuildResourcesPanel(const sf::RenderWindow& window, Player& player)
+{
+	m_resourcesPanel.clear();
+}
+
 void UIManager::rebuildAll(const sf::RenderWindow& window, Player& player) {
     layoutPanels(window);
     rebuildInfoPanel(window, player);
@@ -121,6 +133,24 @@ void UIManager::drawHealthBarUI(sf::RenderWindow& window, sf::Vector2f pos, sf::
 
     window.draw(back);
     window.draw(fill);
+}
+
+void UIManager::drawRecourcesBarUI(sf::RenderWindow& window, const Player& player)
+{
+	const float x = m_resourcesPanel.bounds.position.x + 12.f;
+    const float y = m_resourcesPanel.bounds.position.y + 12.f;
+
+    std::ostringstream ss;
+    ss << "Resources: "<<std::endl;
+    ss << "Wood: " << player.getResource(ResourceType::Wood) << std::endl;
+    ss << "Rock: " << player.getResource(ResourceType::Rock) << std::endl;
+	ss << "Gold: " << player.getResource(ResourceType::Gold) << std::endl;
+    sf::Text t(m_font, ss.str(), 18);
+	t.setFillColor(sf::Color::White);
+	t.setPosition({ x, y });
+    window.draw(t);
+    
+
 }
 
 void UIManager::drawInfoPanelOverlay(sf::RenderWindow& window, const Player& player) {
@@ -168,14 +198,111 @@ void UIManager::drawInfoPanelOverlay(sf::RenderWindow& window, const Player& pla
     }
 }
 
-void UIManager::draw(sf::RenderWindow& window, const Player& player) {
+void UIManager::drawMiniMap(sf::RenderWindow& window, const Player& player, const sf::View& gameView) {
+    if (!m_mapRef) return;
+
+    // Obszar minimapy (wewnątrz panelu z marginesem)
+    float margin = 8.f;
+    float mapX = m_mapPanel.bounds.position.x + margin;
+    float mapY = m_mapPanel.bounds.position.y + margin;
+    float mapW = m_mapPanel.bounds.size.x - margin * 2.f;
+    float mapH = m_mapPanel.bounds.size.y - margin * 2.f;
+
+    // Tło minimapy
+    sf::RectangleShape minimapBg({ mapW, mapH });
+    minimapBg.setPosition({ mapX, mapY });
+    minimapBg.setFillColor(sf::Color(20, 20, 20, 255));
+    minimapBg.setOutlineThickness(1.f);
+    minimapBg.setOutlineColor(sf::Color(80, 80, 80, 255));
+    window.draw(minimapBg);
+
+    auto [mapWidth, mapHeight] = m_mapRef->getSize();
+    float tileSize = m_mapRef->getTileSize();
+    float worldW = static_cast<float>(mapWidth) * tileSize;
+    float worldH = static_cast<float>(mapHeight) * tileSize;
+
+    // Skala: ile pikseli minimapy na jednostkę świata
+    float scaleX = mapW / worldW;
+    float scaleY = mapH / worldH;
+    float scale = std::min(scaleX, scaleY);
+
+    // Wyśrodkuj minimapę w panelu
+    float offsetX = mapX + (mapW - worldW * scale) * 0.5f;
+    float offsetY = mapY + (mapH - worldH * scale) * 0.5f;
+
+    // Rysuj teren (uproszczony — co N-ty tile dla wydajności)
+    const int skip = 4; // Pomijaj co 4 tile'y
+    sf::VertexArray terrainDots(sf::PrimitiveType::Triangles);
+
+    for (unsigned int y = 0; y < mapHeight; y += skip) {
+        for (unsigned int x = 0; x < mapWidth; x += skip) {
+            TileType type = m_mapRef->getTile(x, y);
+            sf::Color color;
+
+            switch (type) {
+            case TileType::Water:  color = sf::Color(64, 164, 223); break;
+            case TileType::Sand:   color = sf::Color(194, 178, 128); break;
+            case TileType::Grass:  color = sf::Color(34, 139, 34); break;
+            case TileType::Mountain:   color = sf::Color(139, 137, 137); break;
+            case TileType::Snow:   color = sf::Color(255, 250, 250); break;
+            default:               color = sf::Color::Magenta;
+            }
+
+            float px = offsetX + static_cast<float>(x) * tileSize * scale;
+            float py = offsetY + static_cast<float>(y) * tileSize * scale;
+
+            terrainDots.append({ {px, py}, color });
+            terrainDots.append({ {px + 9, py}, color });
+            terrainDots.append({ {px, py + 9}, color });
+
+            terrainDots.append({ {px + 9, py}, color });
+            terrainDots.append({ {px + 9, py + 9}, color });
+            terrainDots.append({ {px, py + 9}, color });
+        }
+    }
+    window.draw(terrainDots);
+
+    // Rysuj jednostki gracza (niebieskie kropki)
+    for (const auto& unit : player.getUnits()) {
+        sf::Vector2f pos = unit.getPosition();
+        float px = offsetX + pos.x * scale;
+        float py = offsetY + pos.y * scale;
+
+        sf::CircleShape dot(3.f);
+        dot.setPosition({ px - 3.f, py - 3.f });
+        dot.setFillColor(unit.isSelected() ? sf::Color::Yellow : sf::Color::Cyan);
+        window.draw(dot);
+    }
+
+    // Rysuj prostokąt widoku kamery (biała ramka)
+    sf::Vector2f viewCenter = gameView.getCenter();
+    sf::Vector2f viewSize = gameView.getSize();
+
+    float viewX = offsetX + (viewCenter.x - viewSize.x / 2.f) * scale;
+    float viewY = offsetY + (viewCenter.y - viewSize.y / 2.f) * scale;
+    float viewW = viewSize.x * scale;
+    float viewH = viewSize.y * scale;
+
+    sf::RectangleShape viewRect({ viewW, viewH });
+    viewRect.setPosition({ viewX, viewY });
+    viewRect.setFillColor(sf::Color::Transparent);
+    viewRect.setOutlineThickness(1.5f);
+    viewRect.setOutlineColor(sf::Color::White);
+    window.draw(viewRect);
+}
+
+void UIManager::draw(sf::RenderWindow& window, const Player& player, const sf::View& view) {
     if (!m_ready) return;
 
     m_infoPanel.draw(window);
+	m_resourcesPanel.draw(window);
     m_actionsPanel.draw(window);
     m_mapPanel.draw(window);
 
     drawInfoPanelOverlay(window, player);
+    drawRecourcesBarUI(window, player);
+	drawMiniMap(window, player, view);
+
 }
 
 void UIManager::update(float dt) {

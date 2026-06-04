@@ -11,6 +11,7 @@ struct AppSettings {
 
     // True fullscreen: używamy sf::Style::Fullscreen + desktop mode
     bool fullscreen = false;
+	bool showFps = false;
 
     // FPS limit (0 = brak limitu, ale ja polecam minimum 30)
     unsigned int fpsLimit = 60;
@@ -74,6 +75,11 @@ private:
     sf::RectangleShape m_fsBox;
     sf::RectangleShape m_fsCheck;
     sf::Text m_fsText;
+
+    // FPS shower
+    sf::RectangleShape m_fpsShowerBox;
+	sf::RectangleShape m_fpsShowerCheck;
+	sf::Text m_fpsShowerText;
 
     // FPS "selector"
     sf::RectangleShape m_fpsBox;

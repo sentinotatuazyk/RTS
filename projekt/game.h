@@ -31,6 +31,7 @@ private:
 
     Player m_player;
     Map m_map;
+    sf::Vector2f findValidSpawnPosition(float pX, float pY);
     std::vector<Enemy> m_enemies;
     void addEnemy(sf::Vector2f position, EnemyType type);
     void handleEnemyCollisions();
@@ -51,7 +52,12 @@ private:
 
 	void applySettingsToWindows();
 
-
+    void drawFpsCounter();           // rysuje FPS w rogu ekranu
+    sf::Text m_fpsText;              // tekst FPS
+    sf::Font m_fpsFont;              // czcionka (może być ta sama co UI)
+    float m_fpsUpdateTimer = 0.f;    // timer do odświeżania co 0.25s
+    int m_frameCount = 0;            // licznik klatek
+    float m_currentFps = 0.f;        // aktualna wartość FPS
 
 
 

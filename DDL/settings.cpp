@@ -11,6 +11,7 @@ SettingsScreen::SettingsScreen() :
     m_resPrevText(m_font),
     m_resNextText(m_font),
     m_fsText(m_font),
+    m_fpsShowerText(m_font),
     m_fpsValue(m_font),
     m_fpsMinusText(m_font),
     m_fpsPlusText(m_font),
@@ -52,6 +53,7 @@ bool AppSettings::saveToFile(const std::string& path) const {
 
 	file.write(reinterpret_cast<const char*>(&resolutionIndex), sizeof(resolutionIndex));
     file.write(reinterpret_cast<const char*>(&fullscreen), sizeof(fullscreen));
+    file.write(reinterpret_cast<const char*>(&showFps), sizeof(showFps));
     file.write(reinterpret_cast<const char*>(&fpsLimit), sizeof(fpsLimit));
 
 	std::cout << "ZAPISANO DO: " << std::filesystem::absolute(path) << std::endl;
@@ -66,10 +68,12 @@ bool AppSettings::loadFromFile(const std::string& path) {
     }
 	int tmpResIndex;
     bool tmpFs;
+	bool tmpSFps;
 	unsigned int tmpFps;
 
     file.read(reinterpret_cast<char*>(&tmpResIndex),sizeof(tmpResIndex));
     file.read(reinterpret_cast<char*>(&tmpFs), sizeof(tmpFs));
+    file.read(reinterpret_cast<char*>(&tmpSFps), sizeof(tmpSFps));
     file.read(reinterpret_cast<char*>(&tmpFps), sizeof(tmpFps));
 
     if (!file.good()) return false;
@@ -80,6 +84,7 @@ bool AppSettings::loadFromFile(const std::string& path) {
 
 	resolutionIndex = tmpResIndex;
 	fullscreen = tmpFs;
+	showFps = tmpSFps;
     fpsLimit = tmpFps;
 
 	std::cout << "WCZYTANO Z: " << std::filesystem::absolute(path) << std::endl;
@@ -130,6 +135,14 @@ bool SettingsScreen::init(const std::string& fontPath) {
     m_fsCheck.setFillColor(sf::Color(0, 200, 0, 255)); // rysujemy tylko gdy zaznaczone
     m_fsText = sf::Text(m_font, "Fullscreen (exclusive)", 20);
     m_fsText.setFillColor(sf::Color::White);
+
+	// FPS shower
+	m_fpsShowerBox.setFillColor(sf::Color(20, 20, 20, 230));
+	m_fpsShowerBox.setOutlineThickness(1.f);
+	m_fpsShowerBox.setOutlineColor(sf::Color(90, 90, 90));
+	m_fpsShowerCheck.setFillColor(sf::Color(0, 200, 0, 255)); // rysujemy tylko gdy zaznaczone
+	m_fpsShowerText = sf::Text(m_font, "Show FPS in corner", 20);
+	m_fpsShowerText.setFillColor(sf::Color::White);
 
     // FPS controls
     initBtn(m_fpsMinus, m_fpsMinusText, "-");
@@ -214,6 +227,17 @@ void SettingsScreen::rebuildLayout(const sf::RenderWindow& window) {
 
     m_fsText.setPosition({ px + 24.f + 40.f, rowY + 28.f });
 
+	// FPS shower row
+	rowY += rowGap;
+
+	m_fpsShowerBox.setPosition({ px + 24.f, rowY + 32.f });
+	m_fpsShowerBox.setSize({ 28.f, 28.f });
+
+	m_fpsShowerCheck.setPosition(m_fpsShowerBox.getPosition() + sf::Vector2f(4.f, 4.f));
+	m_fpsShowerCheck.setSize({ 20.f, 20.f });
+
+	m_fpsShowerText.setPosition({ px + 24.f + 40.f, rowY + 28.f });
+
     // FPS row
     rowY += rowGap;
 
@@ -280,6 +304,10 @@ void SettingsScreen::draw(sf::RenderWindow& window) {
     if (m_edit.fullscreen) window.draw(m_fsCheck);
     window.draw(m_fsText);
 
+    window.draw(m_fpsShowerBox);
+	if (m_edit.showFps) window.draw(m_fpsShowerCheck);
+    window.draw(m_fpsShowerText);
+
     window.draw(m_fpsLabel);
     window.draw(m_fpsMinus);
     window.draw(m_fpsPlus);
@@ -313,6 +341,12 @@ SettingsAction SettingsScreen::handleEvent(const sf::Event& event, sf::RenderWin
             if (hit(m_fsBox, mousePx)) {
                 m_edit.fullscreen = !m_edit.fullscreen;
                 return SettingsAction::None;
+            }
+
+			// FPS shower toggle
+            if (hit(m_fpsShowerBox, mousePx)) {
+                m_edit.showFps = !m_edit.showFps;
+				return SettingsAction::None;
             }
 
             // Resolution prev/next (tylko gdy fullscreen off)

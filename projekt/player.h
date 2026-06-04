@@ -9,6 +9,8 @@
 #include "map.h"
 
 
+enum class ResourceType { Gold, Wood, Rock };
+
 class EXPORT_API Player {
 public:
 	Player();
@@ -18,7 +20,7 @@ public:
     void handleEvent(const sf::Event& event, const sf::RenderWindow& window);
 
 	void addGold(int amount);
-    int getGold() const;
+	unsigned int getResource(ResourceType type) const;
 
     void addUnit(sf::Vector2f position, UnitType type);
     std::vector<Unit>& getUnits();
@@ -26,7 +28,10 @@ public:
     void addBuilding(sf::Vector2f position, BuildingType type);
     
 private:
-    int m_gold;
+    unsigned int m_gold;
+    unsigned int m_rocks;
+	unsigned int m_wood;
+
     std::vector<Unit> m_units;
     std::vector<std::unique_ptr<Building>> m_buildings;
 

@@ -1,10 +1,11 @@
 #include "player.h"
+#include "player.h"
 #include <cmath>
 #include <algorithm>
 #include "utils.hpp"
 
 // W konstruktorze ustawiamy już tylko złoto na 0 (lub inną wartość startową)
-Player::Player() : m_gold(0) {
+Player::Player() : m_gold(0),m_wood(0), m_rocks(0) {
     m_selectionBox.setFillColor(sf::Color(0, 255, 0, 50));
     m_selectionBox.setOutlineColor(sf::Color::Green);
     m_selectionBox.setOutlineThickness(1.f);
@@ -17,9 +18,19 @@ void Player::addGold(int amount) {
     m_gold += amount;
 }
 
-int Player::getGold() const {
-    return m_gold;
+unsigned int Player::getResource(ResourceType type) const
+{
+    switch (type) {
+        case ResourceType::Gold:
+			return m_gold;
+		case ResourceType::Wood:
+            return m_wood;
+        case ResourceType::Rock:
+			return m_rocks;
+    }
+	return 0; 
 }
+
 
 void Player::addUnit(sf::Vector2f position,UnitType type) {
     Unit newUnit;
