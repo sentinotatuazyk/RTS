@@ -3,8 +3,10 @@
 #include "API.h"
 #include <SFML/System.hpp>
 #include <SFML/Graphics.hpp>
+#include "buildings.h"
 #include <cmath>
 #include <utility>
+
 class Game;
 
 enum class UnitType {Worker, Warrior, Archer, Hero};
@@ -38,6 +40,19 @@ public:
 
 	void takeDamage(int dmg);
 	bool isDead() const;
+
+	void startBuildJob(BuildingType type, sf::Vector2f pos);
+	bool hasBuildJob() const;
+	bool isBuildingNow() const;
+	BuildingType buildJobType() const;
+	sf::Vector2f buildJobPos() const;
+	bool consumeBuildFinishedFlag();
+
+	float getBuildProgress01() const;
+	sf::Vector2f getBuildSitePos() const; 
+
+
+	
 	
 	
 private:
@@ -62,5 +77,19 @@ private:
 	float m_attackRange;
 	float m_attackCooldown;
 	float m_attackTimer;
+
+	//Worker
+	bool m_buildJobActive = false;
+	bool m_buildingNow = false;
+	BuildingType m_buildType = BuildingType::Quarry;
+	sf::Vector2f m_buildPos{ 0.f,0.f };
+
+	float m_buildTimer = 0.f;
+	float m_buildDuration = 3.f;
+
+	bool m_buildFinished = false;
+
+
+
 
 };

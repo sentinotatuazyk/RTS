@@ -99,14 +99,18 @@ public:
     void draw(sf::RenderWindow& window, const Player& player, const sf::View& view);
 	void update(float dt);
 
-    // true = UI zjadło event (np. klik w panel/przycisk)
-    bool handleEvent(const sf::Event& event, sf::RenderWindow& window, Player& player);
+	// true = UI zjadło event (np. klik w panel/przycisk)
+	bool handleEvent(const sf::Event& event, sf::RenderWindow& window, Player& player);
 
+	void drawPausedOverlay(sf::RenderWindow& window);
+
+
+    
 private:
-    void layoutPanels(const sf::RenderWindow& window);
-    void rebuildAll(const sf::RenderWindow& window, Player& player);
+	void layoutPanels(const sf::RenderWindow& window);
+	void rebuildAll(const sf::RenderWindow& window, Player& player);
 
-    void rebuildInfoPanel(const sf::RenderWindow& window, Player& player);
+	void rebuildInfoPanel(const sf::RenderWindow& window, Player& player);
     void rebuildActionsPanel(const sf::RenderWindow& window, Player& player);
     void rebuildMapPanel(const sf::RenderWindow& window, Player& player);
 	void rebuildResourcesPanel(const sf::RenderWindow& window, Player& player);
@@ -114,6 +118,8 @@ private:
     void drawInfoPanelOverlay(sf::RenderWindow& window, const Player& player);
     void drawHealthBarUI(sf::RenderWindow& window, sf::Vector2f pos, sf::Vector2f size, float hp01);
 	void drawRecourcesBarUI(sf::RenderWindow& window, const Player& player);
+	void drawBuildTypesUI(sf::RenderWindow& window, Player& player);
+
     void drawMiniMap(sf::RenderWindow& window, const Player& player, const sf::View& view);
 
     std::size_t computeSelectionHash(const Player& player) const;
@@ -126,7 +132,7 @@ private:
         float padding,
         float rowHeight
     );
-
+     
 private:
     sf::Font m_font;
     bool m_ready = false;
@@ -136,11 +142,16 @@ private:
     UIPanel m_infoPanel;
 	UIPanel m_resourcesPanel;
     UIPanel m_actionsPanel;
+	UIPanel m_buildPanel;
     UIPanel m_mapPanel;
+
+	bool m_showBuildPanel = false;
 
 	const Map* m_mapRef = nullptr; // do minimapy
 
     std::size_t m_lastSelectionHash = 0;
+
+ 
 
     
 };

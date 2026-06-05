@@ -1,6 +1,8 @@
 #include "unit.h"
 #include "unit.h"
 #include "unit.h"
+#include "unit.h"
+#include "unit.h"
 #include "utils.hpp"
 // Inicjalizujemy podstawowe parametry
 Unit::Unit() : m_speed(150.f), m_health(100), m_isMoving(false), m_isDead(false) {
@@ -133,6 +135,29 @@ void Unit::update(float dt) {
     if (m_attackTimer > 0.f) {
         m_attackTimer -= dt;
     }
+
+    if (m_buildJobActive) {
+        const float arriveDist = 8.f;
+		sf::Vector2f d = m_buildPos - m_position;
+		float dist2 = d.x * d.x + d.y * d.y;
+        if (!m_buildingNow) {
+            if (dist2 <= arriveDist * arriveDist) {
+				stop();
+				m_buildingNow = true;
+				m_buildTimer = 0.f;
+            }
+        }
+        else {
+			m_buildTimer += dt;
+            if (m_buildTimer >= m_buildDuration) {
+				m_buildTimer = m_buildDuration;
+                m_buildJobActive = false;
+                m_buildingNow = false;
+                m_buildFinished = true;
+            }
+        }
+    }
+
     if (m_isMoving) {
         sf::Vector2f direction = m_targetPosition - m_position;
         float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
@@ -167,7 +192,53 @@ bool Unit::isDead() const {
 	return m_health <= 0;
 }
 
+bool Unit::hasBuildJob() const {
+    return m_buildJobActive; // Placeholder logic
+}
 
+bool Unit::isBuildingNow() const {
+    return m_buildingNow; // Placeholder logic
+}
+
+BuildingType Unit::buildJobType() const {
+    return m_buildType; // Placeholder logic
+}
+
+sf::Vector2f Unit::buildJobPos() const {
+    return m_buildPos;
+}
+
+void Unit::startBuildJob(BuildingType type, sf::Vector2f pos) {
+    if (m_type != UnitType::Worker) return;
+
+    m_buildJobActive = true;
+    m_buildingNow = false;
+    m_buildType = type;
+    m_buildPos = pos;
+    m_buildTimer = 0.f;
+    m_buildFinished = false;
+
+    moveTo(pos);
+}
+
+bool Unit::consumeBuildFinishedFlag() {
+    if (!m_buildFinished) return false;
+    m_buildFinished = false;
+    return true;
+
+}
+
+float Unit::getBuildProgress01() const
+{
+    if (!m_buildingNow) return 0.f;
+    if (m_buildDuration < 0.f) return 1.f;
+    return std::clamp(m_buildTimer / m_buildDuration, 0.f, 1.f);
+}
+
+sf::Vector2f Unit::getBuildSitePos() const
+{
+    return m_buildPos;
+}
 
 
 

@@ -38,9 +38,9 @@ private:
     bool m_verticesNeedUpdate = true;
 
     std::unique_ptr<PerlinNoise> m_noise;
-    float m_noiseScale = 0.1f;
+    float m_noiseScale = 0.05f;
     int m_octaves = 8;
-    float m_persistence = 0.7f;
+    float m_persistence = 0.5f;
 
     // Wysokości dla każdego tile'a (opcjonalnie - do cieniowania)
     std::vector<float> m_heightmap;

@@ -33,10 +33,12 @@ Game::Game() :
 	applySettingsToWindows();
 	
 	m_settingsScreen.init("geistmono_light.ttf");
-	float centerX = m_window.getSize().x / 2.f;
-	float centerY = m_window.getSize().y / 2.f;
+	float centerX = mX * tS / 2.f;
+	float centerY = mX * tS / 2.f;
 
 	m_view = m_window.getDefaultView();
+	m_view.setCenter({centerX, centerY});
+
 
 	m_ui.init("geistmono_light.ttf");
 	m_ui.setMap(&m_map);
@@ -75,28 +77,40 @@ sf::Vector2f Game::findValidSpawnPosition(float pX, float pY) {
 	unsigned int tileX = static_cast<unsigned int>(pX / tS);
 	unsigned int tileY = static_cast<unsigned int>(pY / tS);
 
-	if (m_map.getTile(tileX, tileY) != TileType::Water && m_map.getTile(tileX, tileY) != TileType::Mountain) {
-		return { pX, pY };
+	// Sprawdź czy startowa pozycja jest valid
+	if (tileX < mX && tileY < mY) {
+		TileType startTile = m_map.getTile(tileX, tileY);
+		if (startTile != TileType::Water && startTile != TileType::Mountain) {
+			// Zwróć środek tile'a (snap do siatki)
+			return { tileX * tS + tS / 2.f, tileY * tS + tS / 2.f };
+		}
 	}
 
+	// Szukaj w okolicy (spirala)
 	for (int r = 1; r < 50; ++r) {
 		for (int dy = -r; dy <= r; ++dy) {
 			for (int dx = -r; dx <= r; ++dx) {
+				// Tylko obramowanie kwadratu (optymalizacja)
 				if (std::abs(dx) != r && std::abs(dy) != r) continue;
-				
+
 				int checkX = static_cast<int>(tileX) + dx;
 				int checkY = static_cast<int>(tileY) + dy;
 
-				if (checkX < 0 || checkX >= static_cast<int>(tileX) ||
-					checkY < 0 || checkY >= static_cast<int>(tileY)) continue;
+				// POPRAWKA: granice mapy
+				if (checkX < 0 || checkX >= static_cast<int>(mX) ||
+					checkY < 0 || checkY >= static_cast<int>(mY)) continue;
 
-				if (m_map.getTile(checkX, checkY) != TileType::Water || m_map.getTile(tileX, tileY) != TileType::Mountain) {
-					return { static_cast<float>(checkX) * tS + 20.f, static_cast<float>(checkY) * tS + 20.f };
+				// POPRAWKA: AND zamiast OR
+				TileType checkTile = m_map.getTile(checkX, checkY);
+				if (checkTile != TileType::Water && checkTile != TileType::Mountain) {
+					return { checkX * tS + tS / 2.f, checkY * tS + tS / 2.f };
 				}
 			}
 		}
 	}
-	return { static_cast<float>(mX) * tS / 2.f , static_cast<float>(mY) * tS / 2.f };
+
+	// Fallback: środek mapy
+	return { mX * tS / 2.f, mY * tS / 2.f };
 }
 
 void Game::addEnemy(sf::Vector2f position, EnemyType type)
@@ -163,6 +177,10 @@ void Game::update(float deltaTime) {
 	else if (m_state == State::Settings) {
 		(void)deltaTime; // na razie nic tu nie ma, ale może być przydatne
 	}
+	else if (m_state == State::Paused) {
+		(void)deltaTime;
+
+	}
 	else if (m_state == State::Playing) {
 		handleCameraInput(deltaTime);
 
@@ -195,7 +213,7 @@ void Game::render() {
 		m_window.setView(m_window.getDefaultView());
 		m_settingsScreen.draw(m_window);
 	}
-	else if (m_state == State::Playing) {
+	else if (m_state == State::Playing || m_state == State::Paused) {
 		sf::FloatRect mapBounds = m_map.getMapBounds();
 		clampCameraToMap(mapBounds.size.x, mapBounds.size.y);
 
@@ -211,6 +229,11 @@ void Game::render() {
 		if (m_settings.showFps) {
 			m_window.draw(m_fpsText);
 		}
+		if (m_state == State::Paused) {
+			m_ui.drawPausedOverlay(m_window);
+		}
+
+
 	}
 	m_window.display();
 }
@@ -236,7 +259,7 @@ void Game::procesEvents() {
 			else if (action == MenuAction::Settings) { m_settingsScreen.open(m_settings); m_state = State::Settings; }
 			else if (action == MenuAction::StartGame) m_state = State::Playing;
 		}
-		else if (m_state == State::Playing) {
+		else if (m_state == State::Playing || m_state==State::Paused) {
 			m_window.setView(m_window.getDefaultView());
 			if (m_ui.handleEvent(*event, m_window, m_player)) {
 				continue;
@@ -244,9 +267,15 @@ void Game::procesEvents() {
 			m_window.setView(m_view);
 			m_player.handleEvent(*event, m_window);
 
+			// KLAWIATURA
 			if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
+				if (keyPressed->scancode == sf::Keyboard::Scancode::Space) {
+					m_state = (m_state == State::Playing) ? State::Paused : State::Playing;
+					continue;
+				}
 				if (keyPressed->scancode == sf::Keyboard::Scancode::Escape) {
 					m_state = State::Menu;
+					continue;
 				}
 				else if (keyPressed->scancode == sf::Keyboard::Scancode::S) {
 					for (auto& unit : m_player.getUnits()) {
@@ -255,6 +284,7 @@ void Game::procesEvents() {
 						}
 					}
 				}
+				
 				else if (keyPressed->scancode == sf::Keyboard::Scancode::Num1) {
 					for (auto& u : m_player.getUnits()) if (u.isSelected()) u.setState(UnitState::Aggressive);
 				}
@@ -263,8 +293,10 @@ void Game::procesEvents() {
 				}
 				else if (keyPressed->scancode == sf::Keyboard::Scancode::Num3) {
 					for (auto& u : m_player.getUnits()) if (u.isSelected()) u.setState(UnitState::Neutral);
-				}
+				}			
 			}
+
+			//MYSZKA
 			if (const auto* mouseInteracted = event->getIf<sf::Event::MouseWheelScrolled>()) {
 				float factor = (mouseInteracted->delta > 0) ? 0.9f : 1.1f;
 				m_view.zoom(factor);
@@ -448,7 +480,7 @@ void Game::applySettingsToWindows()
 	sf::VideoMode vm;
 
 	sf::State state;
-	unsigned int style = sf::Style::Default;
+	unsigned int style = sf::Style::Titlebar | sf::Style::Close;
 
 	if (m_settings.fullscreen) {
 		vm = sf::VideoMode::getDesktopMode();
@@ -460,8 +492,6 @@ void Game::applySettingsToWindows()
 		sf::Vector2u res = m_settings.chosenResolutionOrDesktop();
 		vm = sf::VideoMode(res);
 		state = sf::State::Windowed;
-
-		style = sf::Style::Default;
 	}
 
 	m_window.create(vm, "RTS Game", style, state);

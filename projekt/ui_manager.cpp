@@ -1,4 +1,5 @@
 #include "ui_manager.h"
+#include "ui_manager.h"
 
 #include "player.h"
 #include "unit.h"
@@ -14,10 +15,18 @@ static std::size_t hashCombine(std::size_t h, std::size_t v) {
     return h ^ (v * 0x9e3779b97f4a7c15ull + (h << 6) + (h >> 2));
 }
 
-static bool anySelected(const Player& player) {
-    for (const auto& u : player.getUnits())
-        if (u.isSelected()) return true;
-    return false;
+
+static bool anySelected(const Player& player, int arg) {
+    if (arg == 1) {
+        for (const auto& u : player.getUnits())
+            if (u.isSelected()) return true;
+        return false;
+    }
+    else {
+        for (const auto& b : player.getBuildings())
+			if (b.get()->isSelected()) return true;
+        return false;
+    }
 }
 
 bool UIManager::init(const std::string& fontPath) {
@@ -37,6 +46,13 @@ std::size_t UIManager::computeSelectionHash(const Player& player) const {
         if (units[i].isSelected())
             h = hashCombine(h, i + 1);
     }
+
+    const auto& buildings = player.getBuildings();
+    for (std::size_t i = 0; i < buildings.size(); ++i) {
+        if (buildings[i] && buildings[i]->isSelected())
+            h = hashCombine(h, (i + 1) * 0x9e3779b9);  // inny mnożnik = inna "przestrzeń" hashy
+    }
+
     return h;
 }
 
@@ -51,6 +67,7 @@ void UIManager::layoutPanels(const sf::RenderWindow& window) {
     m_infoPanel.bounds = sf::FloatRect({ 0.f, top }, { colW, m_panelHeight });
 	m_resourcesPanel.bounds = sf::FloatRect({ colW + 10.f, top }, { colW / 2, m_panelHeight });
     m_actionsPanel.bounds = sf::FloatRect({ colW * 2.f + 1.f, top }, { colW, m_panelHeight });
+	m_buildPanel.bounds = sf::FloatRect({ colW * 2.f + 1.f, top - 130.f }, { colW, 120.f});
     m_mapPanel.bounds = sf::FloatRect({ W - colW/1.5f, H - colW/1.5f }, { colW / 1.5f , colW/ 1.5f});
 }
 
@@ -61,35 +78,92 @@ void UIManager::rebuildInfoPanel(const sf::RenderWindow&, Player&) {
 
 void UIManager::rebuildActionsPanel(const sf::RenderWindow&, Player& player) {
     m_actionsPanel.clear();
-    if (!anySelected(player)) return;
+    m_showBuildPanel = false;  // resetuj panel budowy
+
+    bool anyUnitSelected = anySelected(player, 1);
+    bool anyBuildingSelected = anySelected(player, 2);
+
+    // Nic nie zaznaczone — pusty panel
+    if (!anyUnitSelected && !anyBuildingSelected) {
+        return;
+    }
 
     std::vector<Action> actions;
 
-    actions.push_back({ "Stop", [&player]() {
-        for (auto& u : player.getUnits()) if (u.isSelected()) u.stop();
-    } });
+    if (anyUnitSelected) {
+        // AKCJE DLA JEDNOSTEK
+        bool hasSelectedWorker = false;
+        for (const auto& u : player.getUnits()) {
+            if (u.isSelected() && u.getType() == UnitType::Worker) {
+                hasSelectedWorker = true;
+                break;
+            }
+        }
 
-    actions.push_back({ "Deselect", [&player]() {
-        for (auto& u : player.getUnits()) if (u.isSelected()) u.setSelected(false);
-    } });
+        actions.push_back({ "Stop", [&player]() {
+            for (auto& u : player.getUnits()) if (u.isSelected()) u.stop();
+        } });
 
-    actions.push_back({ "Aggressive", [&player]() {
-        for (auto& u : player.getUnits()) if (u.isSelected()) u.setState(UnitState::Aggressive);
-    } });
+        actions.push_back({ "Deselect", [&player]() {
+            for (auto& u : player.getUnits()) if (u.isSelected()) u.setSelected(false);
+        } });
 
-    actions.push_back({ "Passive", [&player]() {
-        for (auto& u : player.getUnits()) if (u.isSelected()) u.setState(UnitState::Passive);
-    } });
+        actions.push_back({ "Aggressive", [&player]() {
+            for (auto& u : player.getUnits()) if (u.isSelected()) u.setState(UnitState::Aggressive);
+        } });
 
-    actions.push_back({ "Neutral", [&player]() {
-        for (auto& u : player.getUnits()) if (u.isSelected()) u.setState(UnitState::Neutral);
-    } });
+        actions.push_back({ "Passive", [&player]() {
+            for (auto& u : player.getUnits()) if (u.isSelected()) u.setState(UnitState::Passive);
+        } });
 
-    // W przyszłości tylko dopisujesz:
-    // actions.push_back({"Attack-move", ...});
-    // actions.push_back({"Build", ...});
+        actions.push_back({ "Neutral", [&player]() {
+            for (auto& u : player.getUnits()) if (u.isSelected()) u.setState(UnitState::Neutral);
+        } });
 
-    fillPanelGrid(m_actionsPanel, actions, /*columns=*/2, /*padding=*/12.f, /*rowHeight=*/42.f);
+        if (hasSelectedWorker) {
+            actions.push_back({ "Build", [this]() {
+                m_showBuildPanel = !m_showBuildPanel;
+            } });
+        }
+    }
+    else if (anyBuildingSelected) {
+        // AKCJE DLA BUDYNKÓW
+        actions.push_back({ "Deselect", [&player]() {
+            for (auto& b : player.getBuildings())
+                if (b && b->isSelected()) b->setSelected(false);
+        } });
+
+        actions.push_back({ "Demolish", [&player]() {
+            // TODO: zaimplementuj niszczenie budynku
+            player.addGold(5);
+        } });
+
+        // Sprawdź czy zaznaczono Barracks
+        bool hasSelectedBarracks = false;
+        for (const auto& b : player.getBuildings()) {
+            if (b && b->getType() == BuildingType::Barracks && b->isSelected()) {
+                hasSelectedBarracks = true;
+                break;
+            }
+        }
+
+        if (hasSelectedBarracks) {
+            actions.push_back({ "Train Warrior", [&player]() {
+                // TODO: trenuj wojownika
+                player.addGold(5);
+            } });
+            actions.push_back({ "Train Archer", [&player]() {
+                // TODO: trenuj łucznika
+                player.addGold(5);
+            } });
+            actions.push_back({ "Train Hero", [&player]() {
+                // TODO: trenuj bohatera
+                player.addGold(5);
+            } });
+        }
+    }
+
+    fillPanelGrid(m_actionsPanel, actions, 2, 12.f, 42.f);
 }
 
 void UIManager::rebuildMapPanel(const sf::RenderWindow&, Player&) {
@@ -102,11 +176,32 @@ void UIManager::rebuildResourcesPanel(const sf::RenderWindow& window, Player& pl
 	m_resourcesPanel.clear();
 }
 
+
+
 void UIManager::rebuildAll(const sf::RenderWindow& window, Player& player) {
     layoutPanels(window);
     rebuildInfoPanel(window, player);
     rebuildActionsPanel(window, player);
     rebuildMapPanel(window, player);
+}
+
+void UIManager::drawPausedOverlay(sf::RenderWindow& window)
+{
+
+	sf::RectangleShape overlay({ static_cast<float>(window.getSize().x), static_cast<float>(window.getSize().y) });
+	overlay.setFillColor(sf::Color(128, 128, 128, 100));
+	overlay.setPosition({ 0.f, 0.f });
+
+    sf::Text pausedText(m_font);
+    pausedText.setString("PAUSED - Press SPACE to continue");
+    pausedText.setCharacterSize(50);
+    auto b = pausedText.getLocalBounds();
+    pausedText.setFillColor(sf::Color::White);
+    pausedText.setOrigin({ b.position.x + b.size.x * 0.5f, b.position.y + b.size.y * 0.5f });
+    pausedText.setPosition({ window.getSize().x * 0.5f, window.getSize().y * 0.5f });
+
+    window.draw(overlay);
+    window.draw(pausedText);
 }
 
 void UIManager::forceRebuild(const sf::RenderWindow& window, Player& player) {
@@ -153,18 +248,65 @@ void UIManager::drawRecourcesBarUI(sf::RenderWindow& window, const Player& playe
 
 }
 
+void UIManager::drawBuildTypesUI(sf::RenderWindow& window, Player& player)
+{
+	m_buildPanel.clear();
+
+    if (!m_showBuildPanel) return;
+
+
+    std::vector<Action> actions;
+
+	bool hasSelectedWorker = false;
+    for (const auto& u : player.getUnits()) {
+        if (u.isSelected() && u.getType() == UnitType::Worker) {
+            hasSelectedWorker = true;
+            break;
+        }
+    }
+    
+    if (!hasSelectedWorker) {
+        m_showBuildPanel = false;
+        return;
+	}
+
+    actions.push_back({ "Build Quarry", [&player]() {
+            player.beginPlaceBuilding(BuildingType::Quarry);
+    } });
+    actions.push_back({ "Build Forester's Lodge", [&player]() {
+            player.beginPlaceBuilding(BuildingType::Foresters);
+    } });
+    actions.push_back({ "Build GoldMine", [&player]() {
+            player.beginPlaceBuilding(BuildingType::GoldMine);
+    } });
+    actions.push_back({ "Build Barracks", [&player]() {
+            player.beginPlaceBuilding(BuildingType::Barracks);
+	} });
+
+
+	fillPanelGrid(m_buildPanel, actions, /*columns=*/1, /*padding=*/8.f, /*rowHeight=*/36.f);
+}
+
 void UIManager::drawInfoPanelOverlay(sf::RenderWindow& window, const Player& player) {
     const float x = m_infoPanel.bounds.position.x + 12.f;
     const float y = m_infoPanel.bounds.position.y + 12.f;
 
-    const Unit* selected = nullptr;
+    const Unit* selectedUnit = nullptr;
+	const Building* selectedBuilding = nullptr;
     int selectedCount = 0;
 
     for (const auto& u : player.getUnits()) {
         if (u.isSelected()) {
-            selected = &u;
+            selectedUnit = &u;
             ++selectedCount;
         }
+    }
+
+    for (const auto& b : player.getBuildings()) {
+        if (b && b->isSelected()) {
+            selectedBuilding = b.get();
+            ++selectedCount;
+		}
     }
 
     {
@@ -176,9 +318,9 @@ void UIManager::drawInfoPanelOverlay(sf::RenderWindow& window, const Player& pla
         window.draw(t);
     }
 
-    if (selectedCount == 1 && selected) {
-        auto [hp, hpMax] = selected->getHealth();
-        std::string type = toString(selected->getType());
+    if (selectedCount == 1 && selectedUnit) {
+        auto [hp, hpMax] = selectedUnit->getHealth();
+        std::string type = toString(selectedUnit->getType());
 
         float hp01 = (hpMax > 0) ? (static_cast<float>(hp) / static_cast<float>(hpMax)) : 0.f;
 
@@ -195,6 +337,26 @@ void UIManager::drawInfoPanelOverlay(sf::RenderWindow& window, const Player& pla
         window.draw(hpText);
 
         drawHealthBarUI(window, { x, y + 84.f }, { m_infoPanel.bounds.size.x - 24.f, 16.f }, hp01);
+    }
+    else if (selectedBuilding) {
+        auto [hp, hpMax] = selectedBuilding->getHealth();
+        std::string type = toString(selectedBuilding->getType());
+
+		float hp01 = (hpMax > 0) ? (static_cast<float>(hp) / static_cast<float>(hpMax)) : 0.f;
+
+		sf::Text t(m_font, type, 18);
+		t.setFillColor(sf::Color::White);
+		t.setPosition({ x, y + 28.f });
+		window.draw(t);
+		
+        std::ostringstream ss;
+		ss << "HP: " << hp << "/" << hpMax;
+		sf::Text hpText(m_font, ss.str(), 18);
+		hpText.setFillColor(sf::Color::White);
+		hpText.setPosition({ x, y + 56.f });
+		window.draw(hpText);
+
+		drawHealthBarUI(window, { x, y + 84.f }, { m_infoPanel.bounds.size.x - 24.f, 16.f }, hp01);
     }
 }
 
@@ -274,6 +436,18 @@ void UIManager::drawMiniMap(sf::RenderWindow& window, const Player& player, cons
         window.draw(dot);
     }
 
+    for (const auto& building : player.getBuildings()) {
+		auto b = building.get();
+		sf::Vector2f pos = b->getPosition();
+		float px = offsetX + pos.x * scale;
+		float py = offsetY + pos.y * scale;
+
+		sf::RectangleShape rect({ 4.f, 4.f});
+		rect.setPosition({ px - 2.f, py - 2.f });
+        rect.setFillColor(b->getColor());
+		window.draw(rect);
+    }
+
     // Rysuj prostokąt widoku kamery (biała ramka)
     sf::Vector2f viewCenter = gameView.getCenter();
     sf::Vector2f viewSize = gameView.getSize();
@@ -297,6 +471,10 @@ void UIManager::draw(sf::RenderWindow& window, const Player& player, const sf::V
     m_infoPanel.draw(window);
 	m_resourcesPanel.draw(window);
     m_actionsPanel.draw(window);
+    if (m_showBuildPanel) {
+        m_buildPanel.draw(window);
+		drawBuildTypesUI(window, const_cast<Player&>(player)); // const_cast bo drawBuildTypesUI modyfikuje stan UI (pokazuje/ukrywa panel), ale to jest tylko implementacja detali, więc powinno być ok
+    }
     m_mapPanel.draw(window);
 
     drawInfoPanelOverlay(window, player);
@@ -336,6 +514,12 @@ bool UIManager::handleEvent(const sf::Event& event, sf::RenderWindow& window, Pl
             );
 
             // priorytet: actions -> info -> map
+
+            if (m_showBuildPanel && m_buildPanel.handleClick(mousePx)) {
+				m_showBuildPanel = false; // klik w panel budowy też go ukrywa
+                return true;
+            }
+
             if (m_actionsPanel.handleClick(mousePx)) return true;
             if (m_infoPanel.handleClick(mousePx)) return true;
             if (m_mapPanel.handleClick(mousePx)) return true;

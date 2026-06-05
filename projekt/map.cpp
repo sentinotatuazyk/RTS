@@ -15,38 +15,76 @@ Map::Map(unsigned int width, unsigned int height, float tileSize, unsigned int s
 
 
 void Map::generateTerrain() {
+    // Najpierw wygeneruj surowe wysokości
+    std::vector<float> rawHeights(m_width * m_height);
+
     for (unsigned int y = 0; y < m_height; ++y) {
         for (unsigned int x = 0; x < m_width; ++x) {
-            // Użyj FBM dla naturalnego terenu
             float nx = static_cast<float>(x) * m_noiseScale;
             float ny = static_cast<float>(y) * m_noiseScale;
 
             float height = m_noise->fbm(nx, ny, m_octaves, m_persistence);
 
-            // Normalizuj z [-1, 1] do [0, 1]
-            height = (height + 1.0f) * 0.5f;
-
-            // Dodaj domain warping dla ciekawszego terenu
+            // Domain warping
             float warpX = m_noise->noise(nx * 2.0f + 5.2f, ny * 2.0f + 1.3f) * 2.0f;
             float warpY = m_noise->noise(nx * 2.0f + 9.2f, ny * 2.0f + 2.3f) * 2.0f;
             float warpedHeight = m_noise->fbm(nx + warpX, ny + warpY, m_octaves, m_persistence);
-            warpedHeight = (warpedHeight + 1.0f) * 0.5f;
 
-            // Mieszaj oryginał z warped (70/30)
             height = height * 0.7f + warpedHeight * 0.3f;
-
-            m_heightmap[y * m_width + x] = height;
-            m_grid[y * m_width + x] = heightToTile(height);
+            rawHeights[y * m_width + x] = height;
         }
     }
+
+    // Pierwszy przebieg: woda, trawa, góry, śnieg (bez piasku!)
+    for (unsigned int y = 0; y < m_height; ++y) {
+        for (unsigned int x = 0; x < m_width; ++x) {
+            float h = rawHeights[y * m_width + x];
+            m_heightmap[y * m_width + x] = h;
+
+            // Tymczasowo: woda lub ląd (bez piasku jeszcze)
+			m_grid[y * m_width + x] = heightToTile(h);
+        }
+    }
+
+    // Drugi przebieg: piasek TYLKO obok wody
+    for (unsigned int y = 0; y < m_height; ++y) {
+        for (unsigned int x = 0; x < m_width; ++x) {
+            // Jeśli to nie jest trawa — pomijamy (piasek tylko z trawy)
+            if (m_grid[y * m_width + x] != TileType::Grass) continue;
+
+            // Sprawdź 8 sąsiadów
+            bool nearWater = false;
+            for (int dy = -1; dy <= 1 && !nearWater; ++dy) {
+                for (int dx = -1; dx <= 1 && !nearWater; ++dx) {
+                    if (dx == 0 && dy == 0) continue;
+
+                    int nx = static_cast<int>(x) + dx;
+                    int ny = static_cast<int>(y) + dy;
+
+                    // Sprawdź granice mapy
+                    if (nx < 0 || nx >= static_cast<int>(m_width) ||
+                        ny < 0 || ny >= static_cast<int>(m_height)) continue;
+
+                    if (m_grid[ny * m_width + nx] == TileType::Water) {
+                        nearWater = true;
+                    }
+                }
+            }
+
+            // Jeśli obok jest woda i wysokość jest niska — piasek
+            if (nearWater && rawHeights[y * m_width + x] < 0.42f) {
+                m_grid[y * m_width + x] = TileType::Sand;
+            }
+        }
+    }
+
     m_verticesNeedUpdate = true;
 }
 
 TileType Map::heightToTile(float height) const {
     // Progi wysokości dla biomów
-    if (height < 0.50f) return TileType::Water;
-    if (height < 0.60f) return TileType::Sand;
-    if (height < 0.80f) return TileType::Grass;
+    if (height < 0.3f) return TileType::Water;
+    if (height < 0.55f) return TileType::Grass;
     if (height < 0.90f) return TileType::Mountain;
     return TileType::Snow;
 }
