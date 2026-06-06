@@ -1,8 +1,9 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include "API.h"
+#include "enums.h"
 
-enum class MenuAction { None, StartGame, Settings, ExitGame };
+
 
 class EXPORT_API Menu {
 public:

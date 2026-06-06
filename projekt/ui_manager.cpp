@@ -6,6 +6,7 @@
 #include "map.h"
 #include "enemy.h"
 #include "utils.hpp"  // toString(UnitType)
+#include "buildings.h"
 
 #include <sstream>
 #include <algorithm>
@@ -39,20 +40,22 @@ void UIManager::setMap(const Map* map) {
     m_mapRef = map;
 }
 
-std::size_t UIManager::computeSelectionHash(const Player& player) const {
+std::size_t UIManager::computeSelectionHashUnit(const Player& player) const {
     std::size_t h = 0;
     const auto& units = player.getUnits();
     for (std::size_t i = 0; i < units.size(); ++i) {
         if (units[i].isSelected())
             h = hashCombine(h, i + 1);
     }
-
-    const auto& buildings = player.getBuildings();
-    for (std::size_t i = 0; i < buildings.size(); ++i) {
-        if (buildings[i] && buildings[i]->isSelected())
-            h = hashCombine(h, (i + 1) * 0x9e3779b9);  // inny mnożnik = inna "przestrzeń" hashy
+    return h;
+}
+std::size_t UIManager::computeSelectionHashBuilding(const Player& player) const {
+    std::size_t h = 0;
+    const auto& b = player.getBuildings();
+    for (std::size_t i = 0; i < b.size(); ++i) {
+        if (b[i]->isSelected())
+            h = hashCombine(h, (i + 1) * 0x9e3779b9);
     }
-
     return h;
 }
 
@@ -67,8 +70,8 @@ void UIManager::layoutPanels(const sf::RenderWindow& window) {
     m_infoPanel.bounds = sf::FloatRect({ 0.f, top }, { colW, m_panelHeight });
 	m_resourcesPanel.bounds = sf::FloatRect({ colW + 10.f, top }, { colW / 2, m_panelHeight });
     m_actionsPanel.bounds = sf::FloatRect({ colW * 2.f + 1.f, top }, { colW, m_panelHeight });
-	m_buildPanel.bounds = sf::FloatRect({ colW * 2.f + 1.f, top - 130.f }, { colW, 120.f});
-    m_mapPanel.bounds = sf::FloatRect({ W - colW/1.5f, H - colW/1.5f }, { colW / 1.5f , colW/ 1.5f});
+	m_buildPanel.bounds = sf::FloatRect({ colW * 2.f + 1.f, top - 190.f }, { colW, 1900.f});
+    m_mapPanel.bounds = sf::FloatRect({ W - colW/1.5f, H - colW/1.5f }, { colW / 1.5f , colW/ 1.5f });
 }
 
 void UIManager::rebuildInfoPanel(const sf::RenderWindow&, Player&) {
@@ -100,11 +103,12 @@ void UIManager::rebuildActionsPanel(const sf::RenderWindow&, Player& player) {
             }
         }
 
-        actions.push_back({ "Stop", [&player]() {
+        actions.push_back({ "Stop", [&player, this]() {
             for (auto& u : player.getUnits()) if (u.isSelected()) u.stop();
+            addNotification("Units stopped!", sf::Color::White, 2.f);
         } });
 
-        actions.push_back({ "Deselect", [&player]() {
+        actions.push_back({ "Deselect", [&player, this]() {
             for (auto& u : player.getUnits()) if (u.isSelected()) u.setSelected(false);
         } });
 
@@ -133,37 +137,77 @@ void UIManager::rebuildActionsPanel(const sf::RenderWindow&, Player& player) {
                 if (b && b->isSelected()) b->setSelected(false);
         } });
 
-        actions.push_back({ "Demolish", [&player]() {
+        actions.push_back({ "Demolish", [&player, this]() {
             // TODO: zaimplementuj niszczenie budynku
             player.addGold(5);
+            addNotification("Building demolished!", sf::Color::Red, 2.f);
         } });
 
+        
         // Sprawdź czy zaznaczono Barracks
-        bool hasSelectedBarracks = false;
+        Barracks* selectedBarracks = nullptr;
         for (const auto& b : player.getBuildings()) {
             if (b && b->getType() == BuildingType::Barracks && b->isSelected()) {
-                hasSelectedBarracks = true;
+                selectedBarracks = dynamic_cast<Barracks*>(b.get());
                 break;
             }
         }
 
-        if (hasSelectedBarracks) {
-            actions.push_back({ "Train Warrior", [&player]() {
-                // TODO: trenuj wojownika
-                player.addGold(5);
-            } });
-            actions.push_back({ "Train Archer", [&player]() {
-                // TODO: trenuj łucznika
-                player.addGold(5);
-            } });
-            actions.push_back({ "Train Hero", [&player]() {
-                // TODO: trenuj bohatera
-                player.addGold(5);
-            } });
+        
+
+
+        if (selectedBarracks) {
+            if (selectedBarracks->isTraining()) {
+                actions.push_back({ "Training...", []() {} });
+            }
+            else {
+                actions.push_back({ "Train Warrior", [&player, selectedBarracks, this]() {
+                    Cost cost = getUnitCost(UnitType::Warrior);
+                    if (player.canAfford(cost)) {
+                        player.spendResource(ResourceType::Gold, cost.gold);
+                        player.spendResource(ResourceType::Wood, cost.wood);
+                        player.spendResource(ResourceType::Rock, cost.rock);
+                        selectedBarracks->startTraining(UnitType::Warrior);
+                        addNotification("Training Warrior...", sf::Color::Yellow, 2.f);
+                    }
+                    else {
+                        addNotification("Not enough recources!", sf::Color::Red, 2.f);
+                    }
+
+                } });
+                actions.push_back({ "Train Archer", [&player, selectedBarracks,this]() {
+                    Cost cost = getUnitCost(UnitType::Archer);
+                    if (player.canAfford(cost)) {
+                        player.spendResource(ResourceType::Gold, cost.gold);
+                        player.spendResource(ResourceType::Wood, cost.wood);
+                        player.spendResource(ResourceType::Rock, cost.rock);
+                        selectedBarracks->startTraining(UnitType::Archer);
+                        addNotification("Training Archer...", sf::Color::Yellow, 2.f);
+                    }
+                    else {
+                        addNotification("Not enough recources!", sf::Color::Red, 2.f);
+                    }
+                } });
+                actions.push_back({ "Train Hero", [&player, selectedBarracks,this]() {
+                    Cost cost = getUnitCost(UnitType::Hero);
+                    if (player.canAfford(cost)) {
+                        player.spendResource(ResourceType::Gold, cost.gold);
+                        player.spendResource(ResourceType::Wood, cost.wood);
+                        player.spendResource(ResourceType::Rock, cost.rock);
+                        selectedBarracks->startTraining(UnitType::Hero);
+                        addNotification("Training Hero...", sf::Color::Yellow, 2.f);
+                    }
+                    else {
+                        addNotification("Not enough recources!", sf::Color::Red, 2.f);
+                    }
+                } });
+            }
         }
     }
 
     fillPanelGrid(m_actionsPanel, actions, 2, 12.f, 42.f);
+
+
 }
 
 void UIManager::rebuildMapPanel(const sf::RenderWindow&, Player&) {
@@ -204,9 +248,43 @@ void UIManager::drawPausedOverlay(sf::RenderWindow& window)
     window.draw(pausedText);
 }
 
+void UIManager::addNotification(const std::string& text, sf::Color color, float duration)
+{
+    UINotification n;
+    n.text = text;
+    n.color = color;
+    n.lifetime = duration;
+    n.timeLeft = duration;
+    n.slideIn = 0.3f;
+
+    m_notifications.push_back(n);
+
+    while (m_notifications.size() > 8) {
+        m_notifications.pop_front();
+    }
+}
+
+void UIManager::addNotification(const std::string& text, float duration) {
+    addNotification(text, sf::Color::White, duration);
+}
+
+void UIManager::setTooltip(const std::string& text, sf::Vector2f mousePos)
+{
+    if (!m_tooltip || m_tooltip->text != text) {
+        m_tooltip = UIToolTip{ text,mousePos,0.f };
+    }
+    m_tooltip->position = mousePos;
+}
+
+void UIManager::clearTooltip()
+{
+    m_tooltip = std::nullopt;
+}
+
 void UIManager::forceRebuild(const sf::RenderWindow& window, Player& player) {
     if (!m_ready) return;
-    m_lastSelectionHash = computeSelectionHash(player);
+    m_lastSelectionHashUnit = computeSelectionHashUnit(player);
+	m_lastSelectionHashBuilding = computeSelectionHashBuilding(player);
     rebuildAll(window, player);
 }
 
@@ -270,21 +348,58 @@ void UIManager::drawBuildTypesUI(sf::RenderWindow& window, Player& player)
         return;
 	}
 
-    actions.push_back({ "Build Quarry", [&player]() {
+    if (player.hasTownHall()) {
+        actions.push_back({ "Build Townhall", [&player,this]() {
+                auto cost = getBuildingCost(BuildingType::TownHall);
+                if (player.canAfford(cost)) {
+                    player.beginPlaceBuilding(BuildingType::TownHall);
+                }
+                else {
+                    addNotification("Not enough recources!", sf::Color::Red, 2.f);
+                }
+            } });
+    }
+
+    actions.push_back({ "Build Quarry", [&player,this]() {
+        auto cost = getBuildingCost(BuildingType::Quarry);
+        if (player.canAfford(cost)) {
             player.beginPlaceBuilding(BuildingType::Quarry);
+        }
+        else {
+            addNotification("Not enough recources!", sf::Color::Red, 2.f);
+        }
+            
     } });
-    actions.push_back({ "Build Forester's Lodge", [&player]() {
+    actions.push_back({ "Build Forester's Lodge", [&player,this]() {
+        auto cost = getBuildingCost(BuildingType::Foresters);
+        if (player.canAfford(cost)) {
             player.beginPlaceBuilding(BuildingType::Foresters);
+        }
+        else {
+            addNotification("Not enough recources!", sf::Color::Red, 2.f);
+        }
     } });
-    actions.push_back({ "Build GoldMine", [&player]() {
+    actions.push_back({ "Build GoldMine", [&player,this]() {
+            auto cost = getBuildingCost(BuildingType::GoldMine);
+        if (player.canAfford(cost)) {
             player.beginPlaceBuilding(BuildingType::GoldMine);
+        }
+        else {
+            addNotification("Not enough recources!", sf::Color::Red, 2.f);
+        }
     } });
-    actions.push_back({ "Build Barracks", [&player]() {
+    actions.push_back({ "Build Barracks", [&player,this]() {
+            auto cost = getBuildingCost(BuildingType::Barracks);
+        if (player.canAfford(cost)) {
             player.beginPlaceBuilding(BuildingType::Barracks);
+        }
+        else {
+            addNotification("Not enough recources!", sf::Color::Red, 2.f);
+        }
 	} });
 
 
-	fillPanelGrid(m_buildPanel, actions, /*columns=*/1, /*padding=*/8.f, /*rowHeight=*/36.f);
+	fillPanelGrid(m_buildPanel, actions, /*columns=*/1, /*padding=*/8.f, /*rowHeight=*/38.f);
 }
 
 void UIManager::drawInfoPanelOverlay(sf::RenderWindow& window, const Player& player) {
@@ -292,7 +407,7 @@ void UIManager::drawInfoPanelOverlay(sf::RenderWindow& window, const Player& pla
     const float y = m_infoPanel.bounds.position.y + 12.f;
 
     const Unit* selectedUnit = nullptr;
-	const Building* selectedBuilding = nullptr;
+	Building* selectedBuilding = nullptr;
     int selectedCount = 0;
 
     for (const auto& u : player.getUnits()) {
@@ -355,6 +470,19 @@ void UIManager::drawInfoPanelOverlay(sf::RenderWindow& window, const Player& pla
 		hpText.setFillColor(sf::Color::White);
 		hpText.setPosition({ x, y + 56.f });
 		window.draw(hpText);
+
+        if (selectedBuilding->getType() == BuildingType::Barracks) {
+            auto* barracks = dynamic_cast<Barracks*>(selectedBuilding);
+            if (barracks && barracks->isTraining()) {
+                float progress = barracks->getTrainProgress();
+                drawHealthBarUI(window, { x,y + 110.f }, { m_infoPanel.bounds.size.x - 24.f,12.f }, progress);
+                sf::Text tt(m_font, "Training...", 16);
+                tt.setFillColor(sf::Color::Yellow);
+                tt.setPosition({ x, y + 130.f });
+                window.draw(tt);
+            }
+           
+        }
 
 		drawHealthBarUI(window, { x, y + 84.f }, { m_infoPanel.bounds.size.x - 24.f, 16.f }, hp01);
     }
@@ -465,6 +593,111 @@ void UIManager::drawMiniMap(sf::RenderWindow& window, const Player& player, cons
     window.draw(viewRect);
 }
 
+void UIManager::drawNotification(sf::RenderWindow& window)
+{
+    if (m_notifications.empty()) return;
+
+    const float winW = static_cast<float>(window.getSize().x);
+    const float startX = winW - NOTIFICATION_MAX_WIDTH - NOTIFICATION_MARGIN;
+
+    float currentY = NOTIFICATION_MARGIN;
+
+    for (const auto& n : m_notifications) {
+        float alpha = 255.f;
+        if (n.timeLeft < 1.f) {
+            alpha = n.timeLeft * 255.f;
+        }
+
+        float slideOffset = 0.f;
+        float elapsed = n.lifetime - n.timeLeft;
+        if (elapsed < n.slideIn) {
+            float t = elapsed / n.slideIn;
+            t = 1.f - std::pow(1.f - t, 3.f);
+            slideOffset = (1.f - t) * NOTIFICATION_MAX_WIDTH;
+        }
+
+        float x = startX + slideOffset;
+        float y = currentY;
+
+        sf::RectangleShape bg({ NOTIFICATION_MAX_WIDTH, NOTIFICATION_HEIGHT });
+        bg.setPosition({ x, y });
+        sf::Color bgColor(20, 20, 20, static_cast<std::uint8_t>(alpha * 0.85f));
+        bg.setFillColor(bgColor);
+        bg.setOutlineThickness(1.f);
+        sf::Color outlineColor = n.color;
+        outlineColor.a = static_cast<std::uint8_t>(alpha * 0.6f);
+        bg.setOutlineColor(outlineColor);
+        window.draw(bg);
+
+        // Pasek postępu (malejący)
+        float progress = n.timeLeft / n.lifetime;
+        sf::RectangleShape progressBar({ NOTIFICATION_MAX_WIDTH * progress, 3.f });
+        progressBar.setPosition({ x, y + NOTIFICATION_HEIGHT - 3.f });
+        sf::Color progressColor = n.color;
+        progressColor.a = static_cast<std::uint8_t>(alpha);
+        progressBar.setFillColor(progressColor);
+        window.draw(progressBar);
+
+        // Tekst
+        sf::Text text(m_font, n.text, 14);
+        text.setFillColor(sf::Color(255, 255, 255, static_cast<std::uint8_t>(alpha)));
+
+        // Przytnij tekst jeśli za długi
+        auto bounds = text.getLocalBounds();
+        if (bounds.size.x > NOTIFICATION_MAX_WIDTH - 20.f) {
+            std::string truncated = n.text;
+            while (!truncated.empty()) {
+                text.setString(truncated + "...");
+                bounds = text.getLocalBounds();
+                if (bounds.size.x <= NOTIFICATION_MAX_WIDTH - 20.f) break;
+                truncated.pop_back();
+            }
+        }
+
+        text.setPosition({ x + 10.f, y + (NOTIFICATION_HEIGHT - text.getLocalBounds().size.y) / 2.f - 2.f });
+        window.draw(text);
+
+        currentY += NOTIFICATION_HEIGHT + NOTIFICATION_SPACING;
+    }
+}
+
+void UIManager::drawTooltip(sf::RenderWindow& window)
+{
+    if (!m_tooltip) return;
+
+    const float padding = 8.f;
+    const float maxWidth = 200.f;
+
+    sf::Text text(m_font, m_tooltip->text, 14);
+    text.setFillColor(sf::Color(255, 255, 255, static_cast<std::uint8_t>(m_tooltip->alpha)));
+
+    auto bounds = text.getLocalBounds();
+    float w = std::min(bounds.size.x + padding * 2.f, maxWidth);
+    float h = bounds.size.y + padding * 2.f;
+
+    // Pozycja: obok kursora, ale w granicach ekranu
+    float x = m_tooltip->position.x + 15.f;
+    float y = m_tooltip->position.y + 15.f;
+
+    // Nie wychodź poza ekran
+    float winW = static_cast<float>(window.getSize().x);
+    float winH = static_cast<float>(window.getSize().y);
+    if (x + w > winW) x = m_tooltip->position.x - w - 10.f;
+    if (y + h > winH) y = m_tooltip->position.y - h - 10.f;
+
+    // Tło
+    sf::RectangleShape bg({ w, h });
+    bg.setPosition({ x, y });
+    sf::Color bgColor(10, 10, 10, static_cast<std::uint8_t>(m_tooltip->alpha * 0.9f));
+    bg.setFillColor(bgColor);
+    bg.setOutlineThickness(1.f);
+    bg.setOutlineColor(sf::Color(120, 120, 120, static_cast<std::uint8_t>(m_tooltip->alpha * 0.5f)));
+    window.draw(bg);
+
+    text.setPosition({ x + padding, y + padding });
+    window.draw(text);
+}
+
 void UIManager::draw(sf::RenderWindow& window, const Player& player, const sf::View& view) {
     if (!m_ready) return;
 
@@ -480,6 +713,8 @@ void UIManager::draw(sf::RenderWindow& window, const Player& player, const sf::V
     drawInfoPanelOverlay(window, player);
     drawRecourcesBarUI(window, player);
 	drawMiniMap(window, player, view);
+    drawNotification(window);
+    drawTooltip(window);
 
 }
 
@@ -488,6 +723,22 @@ void UIManager::update(float dt) {
 
     for (auto& b : m_infoPanel.buttons)    b.updtate(dt);
 	for (auto& b : m_actionsPanel.buttons) b.updtate(dt);
+
+    for (auto& n : m_notifications) {
+        n.timeLeft -= dt;
+    }
+
+    while (!m_notifications.empty() && m_notifications.front().timeLeft <= 0.f) {
+        m_notifications.pop_front();
+    }
+
+    if (m_tooltip) {
+        if (m_tooltip->alpha < m_tooltip->targetAlpha) {
+            m_tooltip->alpha += TOOLTIP_FADE_SPEED * dt;
+            if (m_tooltip->alpha > m_tooltip->targetAlpha)
+                m_tooltip->alpha = m_tooltip->targetAlpha;
+        }
+    }
 }
 
 bool UIManager::handleEvent(const sf::Event& event, sf::RenderWindow& window, Player& player) {
@@ -499,9 +750,11 @@ bool UIManager::handleEvent(const sf::Event& event, sf::RenderWindow& window, Pl
     }
 
     // rebuild gdy zmienia się selekcja
-    std::size_t h = computeSelectionHash(player);
-    if (h != m_lastSelectionHash) {
-        m_lastSelectionHash = h;
+    std::size_t h1 = computeSelectionHashUnit(player);
+    std::size_t h2 = computeSelectionHashBuilding(player);
+    if (h1 != m_lastSelectionHashUnit || h2 !=m_lastSelectionHashBuilding) {
+        m_lastSelectionHashUnit = h1;
+		m_lastSelectionHashBuilding = h2;
         rebuildAll(window, player);
     }
 

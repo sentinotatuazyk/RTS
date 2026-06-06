@@ -32,22 +32,22 @@ inline sf::Vector2f buildingSize(BuildingType t, float tileSize = 40.f) {
 
 inline std::string toString(UnitType type) {
     switch (type) {
-    case UnitType::Worker: return "Worker";
+    case UnitType::Worker:  return "Worker";
     case UnitType::Warrior: return "Warrior";
-    case UnitType::Archer: return "Archer";
-    case UnitType::Hero: return "Hero";
-    default: return "Unknown";
-    }
+    case UnitType::Archer:  return "Archer";
+    case UnitType::Hero:    return "Hero";
+    default:                return "Unknown";
+    } 
 }
 
 inline std::string toString(BuildingType type) {
     switch (type) {
-    case BuildingType::TownHall: return "Town Hall";
-    case BuildingType::Quarry: return "Quarry";
-    case BuildingType::Barracks: return "Barracks";
-    case BuildingType::GoldMine: return "Gold Mine";
+    case BuildingType::TownHall:  return "Town Hall";
+    case BuildingType::Quarry:    return "Quarry";
+    case BuildingType::Barracks:  return "Barracks";
+    case BuildingType::GoldMine:  return "Gold Mine";
     case BuildingType::Foresters: return "Forester's Lodge";
-    default: return "Unknown";
+    default:                      return "Unknown";
     }
 }
 
@@ -55,9 +55,9 @@ inline std::string toString(BuildingType type) {
 inline std::string toString(EnemyType type) {
     switch (type) {
     case EnemyType::Goblin: return "Goblin";
-    case EnemyType::Orc: return "Orc";
-    case EnemyType::Troll: return "Troll";
-    default: return "Unknown";
+    case EnemyType::Orc:    return "Orc";
+    case EnemyType::Troll:  return "Troll";
+    default:                return "Unknown";
     }
 }
 

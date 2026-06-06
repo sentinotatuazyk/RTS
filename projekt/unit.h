@@ -3,14 +3,11 @@
 #include "API.h"
 #include <SFML/System.hpp>
 #include <SFML/Graphics.hpp>
-#include "buildings.h"
+#include "enums.h"
 #include <cmath>
 #include <utility>
 
 class Game;
-
-enum class UnitType {Worker, Warrior, Archer, Hero};
-enum class UnitState {Aggressive, Passive, Neutral };
 
 class EXPORT_API Unit 
 {
@@ -51,10 +48,6 @@ public:
 	float getBuildProgress01() const;
 	sf::Vector2f getBuildSitePos() const; 
 
-
-	
-	
-	
 private:
 	sf::Vector2f m_position;
 	sf::CircleShape m_shape;

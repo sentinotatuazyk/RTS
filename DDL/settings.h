@@ -4,6 +4,7 @@
 #include <string>
 #include <optional>
 #include <fstream>
+#include "enums.h"
 
 struct AppSettings {
     // Presety rozdzielczości (tylko windowed)
@@ -25,11 +26,7 @@ struct AppSettings {
 	bool loadFromFile(const std::string& path);
 };
 
-enum class SettingsAction {
-    None,
-    Back,   // wróć do menu bez apply
-    Apply   // zastosuj ustawienia
-};
+
 
 // Prosty ekran ustawień (rysowanie + kliknięcia)
 class SettingsScreen {

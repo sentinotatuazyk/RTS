@@ -5,14 +5,31 @@
 #include <string>
 #include <cstddef>
 #include <utility>
+#include <deque>
 
 class Player;
 class Map;
+
+struct UIToolTip {
+    std::string text;
+    sf::Vector2f position;
+    float alpha = 0.f;
+    float targetAlpha = 230.f;
+};
+
+struct UINotification {
+    std::string text;
+    sf::Color color;
+    float lifetime;
+    float timeLeft;
+    float slideIn;
+};
 
 struct UIButton {
     sf::RectangleShape shape;
     sf::Text label;
     std::function<void()> onClick;
+    std::string tooltip;
 
     float flashTimeLeft = 0.f;
     float flashDuration = 0.12f;
@@ -104,6 +121,11 @@ public:
 
 	void drawPausedOverlay(sf::RenderWindow& window);
 
+    void addNotification(const std::string& text, sf::Color color = sf::Color::White, float duration = 3.f);
+    void addNotification(const std::string& text, float duration);
+
+    void setTooltip(const std::string& text, sf::Vector2f mousePos);
+    void clearTooltip();
 
     
 private:
@@ -122,7 +144,12 @@ private:
 
     void drawMiniMap(sf::RenderWindow& window, const Player& player, const sf::View& view);
 
-    std::size_t computeSelectionHash(const Player& player) const;
+    void drawNotification(sf::RenderWindow& window);
+
+    void drawTooltip(sf::RenderWindow& window);
+
+    std::size_t computeSelectionHashUnit(const Player& player) const;
+    std::size_t computeSelectionHashBuilding(const Player& player) const;
 
     // Jeden wspólny “layout engine” dla przycisków (super przy rozbudowie UI)
     void fillPanelGrid(
@@ -132,6 +159,7 @@ private:
         float padding,
         float rowHeight
     );
+
      
 private:
     sf::Font m_font;
@@ -149,9 +177,17 @@ private:
 
 	const Map* m_mapRef = nullptr; // do minimapy
 
-    std::size_t m_lastSelectionHash = 0;
+    std::size_t m_lastSelectionHashUnit = 0;
+	std::size_t m_lastSelectionHashBuilding = 0;
 
- 
+    std::deque<UINotification> m_notifications;
+    static constexpr float NOTIFICATION_MAX_WIDTH = 300.f;
+    static constexpr float NOTIFICATION_HEIGHT = 32.f;
+    static constexpr float NOTIFICATION_MARGIN = 10.f;
+    static constexpr float NOTIFICATION_SPACING = 6.f;
+
+    std::optional<UIToolTip> m_tooltip;
+    static constexpr float TOOLTIP_FADE_SPEED = 800.f;
 
     
 };

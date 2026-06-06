@@ -50,12 +50,33 @@ void Player::addResource(ResourceType type, int amount)
     }
 }
 
+void Player::spendResource(ResourceType type, int amount)
+{
+    switch (type) {
+    case ResourceType::Gold:
+		m_gold -= amount;
+        break;
+	case ResourceType::Wood:
+		m_wood -= amount;
+        break;
+    case ResourceType::Rock:
+        m_rocks -= amount;
+        break;
+    }
+}
+
 
 void Player::addUnit(sf::Vector2f position,UnitType type) {
     Unit newUnit;
     newUnit.spawn(position, type);
     m_units.push_back(newUnit);
 }
+
+bool Player::canAfford(Cost cost) const
+{
+    return m_gold >= cost.gold && m_wood >= cost.wood && m_rocks >= cost.rock;
+}
+
 
 std::vector<Unit>& Player::getUnits()
 {

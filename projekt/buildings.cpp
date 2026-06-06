@@ -1,12 +1,8 @@
 #include "buildings.h"
-#include "buildings.h"
-#include "buildings.h"
-#include "buildings.h"
-#include "buildings.h"
-#include "buildings.h"
 #include "player.h"
 #include "utils.hpp"
 #include <iostream>
+
 
 Building::Building(sf::Vector2f pos, int hp) : m_position(pos), m_health(hp), m_maxHealth(hp), m_type(BuildingType::TownHall) {
 	m_shape.setSize(defaultSize(m_type));
@@ -104,8 +100,6 @@ Barracks::Barracks(sf::Vector2f pos) : Building(pos, 800) {
 	m_shape.setOutlineColor(sf::Color(211, 211, 211));  //Jasnoszary
     m_shape.setOrigin({ 25.f, 25.f });
 
-	m_trainingTimer = 0.f;
-	m_isTraining = false;
 }
 
 Barracks::~Barracks() = default;
@@ -114,8 +108,14 @@ void Barracks::update(float dt, Player& p) {
     if (m_isTraining) {
         m_trainingTimer -= dt;
         if (m_trainingTimer <= 0.f) {
-            std::cout << "Jednostka wytrenowana w Barracks!" << std::endl;
-            m_isTraining = false; 
+            std::cout << toString(m_currentTraining) << "wytrenowany!" << std::endl;
+
+            sf::Vector2f spawnPos = m_position + sf::Vector2f(60.f, 0.f);
+
+            p.addUnit(spawnPos, m_currentTraining);
+
+            m_isTraining = false;
+            m_trainingTimer = 0.f;
         }
     }
     if (m_isSelected) {
@@ -127,13 +127,56 @@ void Barracks::update(float dt, Player& p) {
     
 }
 
-void Barracks::startTraining() {
-    if (!m_isTraining) {
-        m_trainingTimer = 3.f; 
-        m_isTraining = true;
-        std::cout << "Rozpoczęto trening jednostki w Barracks!" << std::endl;
+void Barracks::startTraining(UnitType type) {
+    if (m_isTraining) {
+        std::cout << "Baraki są zajęte! Poczekaj na zakończenie treningu." << std::endl;
     }
+    m_currentTraining = type;
+    m_trainingTimer = getTrainingTime(type);
+    m_isTraining = true;
+    m_isTraining = true;
+    std::cout << "Rozpoczęto trening" << toString(type) << std::endl;
 }
+
+void Barracks::upgrade(Player& p)
+{
+    switch (m_lvl) {
+    case 1:
+        p.spendResource(ResourceType::Gold, 100);
+        p.spendResource(ResourceType::Wood, 1000);
+        p.spendResource(ResourceType::Gold, 1000);
+        m_lvl++;
+        break;
+    case 2:
+        p.spendResource(ResourceType::Gold, 300);
+        p.spendResource(ResourceType::Wood, 2000);
+        p.spendResource(ResourceType::Gold, 2000);
+        m_lvl++;
+        break;
+    default:
+        std::cout << "Maksymalny poziom barakow zostal osiagniety" << std::endl;
+    }
+    
+}
+
+bool Barracks::isTraining() const
+{
+    return m_isTraining;
+}
+
+UnitType Barracks::getTrainingType() const
+{
+    return m_currentTraining;
+}
+
+float Barracks::getTrainProgress()
+{
+    if (!m_isTraining) return 0.f;
+    float total = getTrainingTime(m_currentTraining);
+    return 1.f - (m_trainingTimer / total);
+}
+
+
 
 //TOWNHALL
 

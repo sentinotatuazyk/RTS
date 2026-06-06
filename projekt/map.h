@@ -3,8 +3,9 @@
 #include <vector>
 #include <memory>
 #include "PerlinNoise.h"
+#include "enums.h"
 
-enum class TileType { Grass, Water, Mountain, Sand, Snow };
+
 
 class Map {
 public:

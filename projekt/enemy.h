@@ -1,10 +1,10 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include "API.h"
+#include "enums.h"
 class Game;
 
-enum class EnemyType { Goblin, Orc, Troll };
-enum class EnemyState { Aggressive, Passive, Neutral  };
+
 
 class EXPORT_API Enemy
 {

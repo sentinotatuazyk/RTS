@@ -7,9 +7,10 @@
 #include "buildings.h"
 #include "API.h"
 #include "map.h"
+#include "enums.h"
 
 
-enum class ResourceType { Gold, Wood, Rock };
+
 
 class EXPORT_API Player {
 public:
@@ -22,8 +23,10 @@ public:
 	void addGold(int amount);
 	unsigned int getResource(ResourceType type) const;
 	void addResource(ResourceType type, int amount);
+	void spendResource(ResourceType type, int amount);
 
     void addUnit(sf::Vector2f position, UnitType type);
+    bool canAfford(Cost cost) const;
     std::vector<Unit>& getUnits();
     const std::vector<Unit>& getUnits() const;
     void addBuilding(sf::Vector2f position, BuildingType type);

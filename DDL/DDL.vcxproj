@@ -139,6 +139,7 @@ copy /Y "$(SolutionDir)x64\Debug\*lib" "P:\lib"</Command>
     <ClInclude Include="..\projekt\unit.h" />
     <ClInclude Include="..\projekt\utils.hpp" />
     <ClInclude Include="API.h" />
+    <ClInclude Include="enums.h" />
     <ClInclude Include="PerlinNoise.h" />
     <ClInclude Include="settings.h" />
   </ItemGroup>
