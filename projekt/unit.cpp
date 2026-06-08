@@ -37,6 +37,7 @@ void Unit::spawn(sf::Vector2f position,UnitType type) {
         m_shape.setRadius(10.f);
         m_shape.setFillColor(sf::Color::Red);
         m_shape.setOrigin({ 10.f, 10.f });
+        
         break;
     case UnitType::Warrior:
         m_speed = 110.f;

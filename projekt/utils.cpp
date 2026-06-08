@@ -1,6 +1,9 @@
 #include "utils.hpp"
 #include <cmath>
 #include <algorithm>
+#include <memory>
+
+class Building;
 
 void applyCircleCollision(sf::Vector2f& pos1, sf::Vector2f& pos2, float radius1, float radius2) {
 	sf::Vector2f dir = pos1 - pos2;
@@ -50,6 +53,38 @@ bool applyMapCollision(sf::Vector2f& pos, float radius, const Map& map) {
 			}
 		}
 	}
+	return collided;
+}
+
+bool applyBuildingCollision(sf::Vector2f& pos, float radius,
+	const std::vector<std::unique_ptr<Building>>& buildings)
+{
+	bool collided = false;
+
+	for (const auto& b : buildings) {
+		sf::FloatRect bounds = b->getBounds();
+
+		// Najbliższy punkt na prostokącie budynku do środka jednostki
+		float closestX = std::max(bounds.position.x,
+			std::min(pos.x, bounds.position.x + bounds.size.x));
+		float closestY = std::max(bounds.position.y,
+			std::min(pos.y, bounds.position.y + bounds.size.y));
+
+		float distX = pos.x - closestX;
+		float distY = pos.y - closestY;
+		float distanceSquared = distX * distX + distY * distY;
+
+		if (distanceSquared < radius * radius) {
+			float distance = std::sqrt(distanceSquared);
+			if (distance > 0.0001f) {
+				float overlap = radius - distance;
+				pos.x += (distX / distance) * overlap;
+				pos.y += (distY / distance) * overlap;
+			}
+			collided = true;
+		}
+	}
+
 	return collided;
 }
 

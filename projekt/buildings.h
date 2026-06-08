@@ -6,6 +6,9 @@
 #include <utility>
 #include "../../SFML-3.1.0/include/SFML/Graphics/Color.hpp"
 #include "enums.h"
+#include <SFML/System/Vector2.hpp>
+#include <memory>
+#include <vector>
 
 class Player;
 
@@ -13,25 +16,38 @@ struct Cost {
     int gold;
     int wood;
     int rock;
+    int food;
 };
 
-static Cost getUnitCost(UnitType type) {
+static Cost getUnitCost(UnitType type) { // 5 kamienia i drewna na sekunde, 1 gold na sekunde
     switch (type) {
-    case UnitType::Warrior: return { 50 , 30 , 20 };
-    case UnitType::Archer:  return { 60 , 40 , 10 };
-    case UnitType::Hero:    return { 200, 100, 50 };
-    default:                return { 0  , 0  , 0 };
+    case UnitType::Warrior: return { 0, 0, 0, 1 };
+    case UnitType::Archer:  return { 0, 0, 0, 2 };
+    case UnitType::Hero:    return { 0, 0, 0, 5 };
+    default:                return { 0, 0 , 0, 0 };
     }
 }
 
 static Cost getBuildingCost(BuildingType type) {
     switch (type) {
-    case BuildingType::TownHall:  return { 0,0,0 };
-    case BuildingType::Quarry:    return { 0,0,0 };
-    case BuildingType::Barracks:  return { 0,0,0 };
-    case BuildingType::Foresters: return { 0,0,0 };
-    case BuildingType::GoldMine:  return { 0,0,0 };
-    default:                      return { 0,0,0 };
+    case BuildingType::TownHall:  return { 0,0,0,0 };
+    case BuildingType::Quarry:    return { 0,0,0,0 };
+    case BuildingType::Barracks:  return { 0,0,0,0 };
+    case BuildingType::Foresters: return { 0,0,0,0 };
+    case BuildingType::GoldMine:  return { 0,0,0,0 };
+	case BuildingType::Farm:      return { 0,0,0,0 };
+	case BuildingType::Fence:	  return { 0,0,0,0 };
+    default:                      return { 0,0,0,0 };
+    }
+}
+
+static Cost getUpgradeCost(BuildingType type, unsigned short lvl) {
+    switch (type) {
+    case BuildingType::Barracks:
+        if (lvl == 2)            return { 0,0,0,0 };
+        else if (lvl == 3)       return { 0,0,0,0 };
+		else                     return { 0,0,0,0 };
+    default:                     return { 0,0,0,0 };
     }
 }
 
@@ -43,6 +59,8 @@ static float getTrainingTime(UnitType type) {
     default:                return 3.f;
     }
 }
+
+
 
 class Building {
 public:
@@ -106,6 +124,7 @@ public:
 	void upgrade(Player& p);
     bool isTraining() const;
     UnitType getTrainingType() const;
+	unsigned short getLvl() const { return m_lvl; }
 
     float getTrainProgress();
 
@@ -136,3 +155,42 @@ public:
 private:
     float m_miningTimer;
 };
+
+class Farm : public Building {
+public:
+    Farm(sf::Vector2f pos);
+    virtual ~Farm();
+    Farm(const Farm& other) = default;
+    void update(float dt, Player& p) override;
+private:
+
+    float m_miningTimer;
+};
+
+class Fence : public Building {
+public:
+    Fence(sf::Vector2f pos);
+    virtual ~Fence();
+    Fence(const Fence& other) = default;
+    void update(float dt, Player& p) override;
+    void draw(sf::RenderWindow& window) override;
+
+    void updateSegment(const std::vector<std::unique_ptr<Building>>& allBuildings);
+    FenceStates getFenceState() const;
+	static void setAtlas(sf::Texture* atlas) { fenceAtlas = atlas; }
+private:
+	FenceStates m_state = FenceStates::Front;
+	static sf::Texture* fenceAtlas;
+
+	bool hasFenceNeighbor(const sf::Vector2f& pos,const std::vector<std::unique_ptr<Building>>& buildings );
+};
+
+static FenceStates getFenceStateOnPos(sf::Vector2f pos, const std::vector<std::unique_ptr<Building>>& buildings) {
+    for (auto& b : buildings) {
+        if (b->getType() == BuildingType::Fence && b->getPosition() == pos) {
+            Fence* fence = dynamic_cast<Fence*>(b.get());
+            return fence->getFenceState();
+        }
+    }
+    return FenceStates::Front;
+}

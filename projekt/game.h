@@ -50,6 +50,8 @@ private:
 
     UIManager m_ui;
 
+    sf::Texture m_fenceAtlas;
+
 	void applySettingsToWindows();
 
     void drawFpsCounter();           // rysuje FPS w rogu ekranu

@@ -7,7 +7,7 @@
 
 constexpr unsigned int mX = 150; //  sf::VideoMode::getDesktopMode().size.x / 40 + 1
 constexpr unsigned int mY = 100; //  sf::VideoMode::getDesktopMode().size.y / 40 + 1
-constexpr float tS = 40.f;
+constexpr float tS = 32.f;
 
 Game::Game() :
 	m_window(sf::VideoMode({ 1280, 720 }), "RTS Game", sf::Style::Titlebar | sf::Style::Close),
@@ -39,6 +39,9 @@ Game::Game() :
 	m_view = m_window.getDefaultView();
 	m_view.setCenter({centerX, centerY});
 
+	m_fenceAtlas.loadFromFile("fence_atlas.png");
+
+	Fence::setAtlas(&m_fenceAtlas);
 
 	m_ui.init("geistmono_light.ttf");
 	m_ui.setMap(&m_map);
@@ -126,6 +129,13 @@ void Game::handleEnemyCollisions()
 	for (auto& enemy : m_enemies) {
 		sf::Vector2f pos = enemy.getPosition();
 		applyMapCollision(pos, enemy.getRadius(), m_map);
+		enemy.setPosition(pos);
+	}
+
+	//enemy vs budynki
+	for (auto& enemy : m_enemies) {
+		sf::Vector2f pos = enemy.getPosition();
+		applyBuildingCollision(pos, enemy.getRadius(), m_player.getBuildings());
 		enemy.setPosition(pos);
 	}
 
@@ -370,16 +380,28 @@ void Game::handleCombat(float dt) {
 }
 
 void Game::removeDeadEntities() {
-	m_enemies.erase(
-		std::remove_if(m_enemies.begin(), m_enemies.end(), [](const Enemy& e) { return e.isDead(); }),
-		m_enemies.end()
-	);
+	for (size_t i = 0; i < m_enemies.size(); ) {
+		if (m_enemies[i].isDead()) {
+			m_enemies[i] = std::move(m_enemies.back());
+			m_enemies.pop_back();
+		}
+		else {
+			++i;
+		}
+	}
 
 	auto& units = m_player.getUnits();
-	units.erase(
-		std::remove_if(units.begin(), units.end(), [](const Unit& u) { return u.isDead(); }),
-		units.end()
-	);
+	for (size_t i = 0; i < units.size(); ) {
+		if (units[i].isDead()) {
+			m_player.changeUnitCount(units[i].getType(), -1);
+			units[i] = std::move(units.back());
+			units.pop_back();
+
+		}
+		else {
+			++i;
+		}
+	}
 }
 
 void Game::handleAi() {

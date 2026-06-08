@@ -61,5 +61,26 @@
     <Image Include="resources\skull.png">
       <Filter>Pliki zasobów</Filter>
     </Image>
+    <Image Include="resources\fence_front.png">
+      <Filter>Pliki zasobów</Filter>
+    </Image>
+    <Image Include="resources\fence_leftbend.png">
+      <Filter>Pliki zasobów</Filter>
+    </Image>
+    <Image Include="resources\fence_leftbend_up.png">
+      <Filter>Pliki zasobów</Filter>
+    </Image>
+    <Image Include="resources\fence_rightbend.png">
+      <Filter>Pliki zasobów</Filter>
+    </Image>
+    <Image Include="resources\fence_rightbend_up.png">
+      <Filter>Pliki zasobów</Filter>
+    </Image>
+    <Image Include="resources\fence_sideleft.png">
+      <Filter>Pliki zasobów</Filter>
+    </Image>
+    <Image Include="resources\fence_sideright.png">
+      <Filter>Pliki zasobów</Filter>
+    </Image>
   </ItemGroup>
 </Project>

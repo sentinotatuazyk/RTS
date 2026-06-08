@@ -5,7 +5,7 @@
 #include <iostream>
 
 // W konstruktorze ustawiamy już tylko złoto na 0 (lub inną wartość startową)
-Player::Player() : m_gold(0),m_wood(0), m_rocks(0) {
+Player::Player() : m_gold(0),m_wood(0), m_rocks(0), m_food(0) {
     m_selectionBox.setFillColor(sf::Color(0, 255, 0, 50));
     m_selectionBox.setOutlineColor(sf::Color::Green);
     m_selectionBox.setOutlineThickness(1.f);
@@ -18,11 +18,7 @@ Player::Player() : m_gold(0),m_wood(0), m_rocks(0) {
 Player::~Player() {
 }
 
-void Player::addGold(int amount) {
-    m_gold += amount;
-}
-
-unsigned int Player::getResource(ResourceType type) const
+int Player::getResource(ResourceType type) const
 {
     switch (type) {
         case ResourceType::Gold:
@@ -31,6 +27,8 @@ unsigned int Player::getResource(ResourceType type) const
             return m_wood;
         case ResourceType::Rock:
 			return m_rocks;
+        case ResourceType::Food:
+			return m_food; 
     }
 	return 0; 
 }
@@ -46,6 +44,9 @@ void Player::addResource(ResourceType type, int amount)
             break;
         case ResourceType::Rock:
             m_rocks += amount;
+            break;
+        case ResourceType::Food:
+			m_food += amount;
 			break;
     }
 }
@@ -54,13 +55,17 @@ void Player::spendResource(ResourceType type, int amount)
 {
     switch (type) {
     case ResourceType::Gold:
-		m_gold -= amount;
+        m_gold -= amount;
         break;
-	case ResourceType::Wood:
-		m_wood -= amount;
+    case ResourceType::Wood:
+        m_wood -= amount;
         break;
     case ResourceType::Rock:
         m_rocks -= amount;
+        break;
+
+    case ResourceType::Food:
+        m_food -= amount;
         break;
     }
 }
@@ -69,7 +74,37 @@ void Player::spendResource(ResourceType type, int amount)
 void Player::addUnit(sf::Vector2f position,UnitType type) {
     Unit newUnit;
     newUnit.spawn(position, type);
+	m_unitCount++;
+	m_unitTable[type]++;
     m_units.push_back(newUnit);
+}
+
+int Player::getUnitCount() const
+{
+    return m_unitCount;
+}
+
+int Player::getUnitCount(UnitType type) const
+{
+    switch (type) {
+        case UnitType::Worker:
+            return m_unitTable.at(UnitType::Worker);
+        case UnitType::Warrior:
+            return m_unitTable.at(UnitType::Warrior);
+        case UnitType::Archer:
+            return m_unitTable.at(UnitType::Archer);
+        case UnitType::Hero:
+			return m_unitTable.at(UnitType::Hero);
+        default:
+		    return 0;
+    }
+}
+
+
+void Player::changeUnitCount(UnitType type, int amount)
+{
+	m_unitCount += amount;
+	m_unitTable[type] += amount;
 }
 
 bool Player::canAfford(Cost cost) const
@@ -77,16 +112,17 @@ bool Player::canAfford(Cost cost) const
     return m_gold >= cost.gold && m_wood >= cost.wood && m_rocks >= cost.rock;
 }
 
-
 std::vector<Unit>& Player::getUnits()
 {
     return m_units;
 }
 
+
 const std::vector<Unit>& Player::getUnits() const
 {
     return m_units;
 }
+
 
 void Player::addBuilding(sf::Vector2f position, BuildingType type)
 {
@@ -97,28 +133,163 @@ void Player::addBuilding(sf::Vector2f position, BuildingType type)
                 return;
             }
 			m_TownHallBuilt = true;
+			m_buildingCount++;
+            m_buildingTable[type]++;
             m_buildings.push_back(std::make_unique<TownHall>(position));
             break;
         case BuildingType::Quarry:
+            m_buildingCount++;
+            m_buildingTable[type]++;
             m_buildings.push_back(std::make_unique<Quarry>(position));
             break;
         case BuildingType::Barracks:
+            m_buildingCount++;
+            m_buildingTable[type]++;
             m_buildings.push_back(std::make_unique<Barracks>(position));
 			break;
         case BuildingType::GoldMine:
+            m_buildingCount++;
+            m_buildingTable[type]++;
 			m_buildings.push_back(std::make_unique<GoldMine>(position));
             break;
         case BuildingType::Foresters:
+            m_buildingCount++;
+            m_buildingTable[type]++;
 			m_buildings.push_back(std::make_unique<Foresters>(position));
+            break;
+        case BuildingType::Farm:
+            m_buildingCount++;
+            m_buildingTable[type]++;
+			m_foodIncome += 5;
+            m_buildings.push_back(std::make_unique<Farm>(position));
+			break;
+        case BuildingType::Fence:
+            m_buildingCount++;
+            m_buildingTable[type]++;
+            m_buildings.push_back(std::make_unique<Fence>(position));
+            updateAllFenceSegments(); // przelicz segmenty wszystkich płotów
             break;
         default:
 			break;
     }
 }
 
+int Player::getBuildingCount() const
+{
+    return m_buildingCount;
+}
+
+int Player::getBuildingCount(BuildingType type) const
+{
+    switch (type) {
+        case BuildingType::TownHall:
+            return m_buildingTable.at(BuildingType::TownHall);
+        case BuildingType::Quarry:
+            return m_buildingTable.at(BuildingType::Quarry);
+        case BuildingType::Barracks:
+            return m_buildingTable.at(BuildingType::Barracks);
+        case BuildingType::GoldMine:
+            return m_buildingTable.at(BuildingType::GoldMine);
+        case BuildingType::Foresters:
+            return m_buildingTable.at(BuildingType::Foresters);
+        case BuildingType::Farm:
+            return m_buildingTable.at(BuildingType::Farm);
+		default:
+            return 0;
+    }
+}
+
+void Player::changeBuildingCount(BuildingType type, int amount)
+{
+	m_buildingCount += amount;
+	m_buildingTable[type] += amount;
+}
+
+void Player::updateAllFenceSegments()
+{
+    for (auto& b : m_buildings) {
+        if (b->getType() == BuildingType::Fence) {
+            auto* fence = static_cast<Fence*>(b.get());
+            fence->updateSegment(m_buildings);
+        }
+    }
+}
+
+void Player::removeBuilding(Building* buildingToRemove) {
+    for (auto it = m_buildings.begin(); it != m_buildings.end(); ++it) {
+        if (it->get() == buildingToRemove) {
+            // Zmniejsz liczniki PRZED usunięciem
+            BuildingType type = (*it)->getType();
+            changeBuildingCount(type, -1);
+
+            if (type == BuildingType::TownHall) {
+                m_TownHallDestroyed = true;
+                m_TownHallBuilt = false;
+            }
+
+            // Usuń budynek
+            m_buildings.erase(it);
+
+            if (type == BuildingType::Fence) {
+                updateAllFenceSegments();
+            }
+            return; // usunęliśmy jeden, koniec
+        }
+    }
+}
+
+void Player::demolishSelectedBuildings() {
+    // Usuń wszystkie zaznaczone budynki
+    for (auto it = m_buildings.begin(); it != m_buildings.end(); ) {
+        if ((*it)->isSelected()) {
+            BuildingType type = (*it)->getType();
+
+            // Zwrot surowców (np. 50% kosztu)
+            // auto cost = getBuildingCost(type);
+            // addResource(ResourceType::Gold, cost.gold / 2);
+
+            changeBuildingCount(type, -1);
+
+            if (type == BuildingType::TownHall) {
+                m_TownHallDestroyed = true;
+                m_TownHallBuilt = false;
+            }
+
+            it = m_buildings.erase(it); // erase zwraca iterator na następny
+        }
+        else {
+            ++it;
+        }
+    }
+}
+
 const std::vector <std::unique_ptr<Building>> &Player::getBuildings() const
 {
     return m_buildings;
+}
+
+int Player::getFoodIncome() const
+{
+    return m_foodIncome;
+}
+
+int Player::calculateFoodIncome() const
+{
+    int res = 0;
+    for (auto& u : m_unitTable) {
+        if (u.first == UnitType::Warrior) {
+            res += u.second * 1;
+        }
+        else if (u.first == UnitType::Archer) {
+            res += u.second * 2;
+        }
+        else if (u.first == UnitType::Hero) {
+            res += u.second * 5;
+		}
+    }
+
+    
+    return m_foodIncome - res;
 }
 
 bool Player::hasTownHall() const
@@ -165,7 +336,7 @@ void Player::update(float deltaTime, const Map& map) {
     if (m_placingBuilding) {
         const float tileSize = map.getTileSize();
 
-        m_ghostSize = Building::defaultSize(m_placeType);
+        m_ghostSize = { tileSize,tileSize };
         m_ghostPos = snapToTile(m_lastMouseWorldPos, tileSize);
 
 

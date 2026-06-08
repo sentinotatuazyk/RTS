@@ -93,6 +93,8 @@ void UIManager::rebuildActionsPanel(const sf::RenderWindow&, Player& player) {
 
     std::vector<Action> actions;
 
+	unsigned short barackLvl = 0;
+
     if (anyUnitSelected) {
         // AKCJE DLA JEDNOSTEK
         bool hasSelectedWorker = false;
@@ -107,11 +109,6 @@ void UIManager::rebuildActionsPanel(const sf::RenderWindow&, Player& player) {
             for (auto& u : player.getUnits()) if (u.isSelected()) u.stop();
             addNotification("Units stopped!", sf::Color::White, 2.f);
         } });
-
-        actions.push_back({ "Deselect", [&player, this]() {
-            for (auto& u : player.getUnits()) if (u.isSelected()) u.setSelected(false);
-        } });
-
         actions.push_back({ "Aggressive", [&player]() {
             for (auto& u : player.getUnits()) if (u.isSelected()) u.setState(UnitState::Aggressive);
         } });
@@ -127,20 +124,24 @@ void UIManager::rebuildActionsPanel(const sf::RenderWindow&, Player& player) {
         if (hasSelectedWorker) {
             actions.push_back({ "Build", [this]() {
                 m_showBuildPanel = !m_showBuildPanel;
+                clearTooltip();
             } });
         }
     }
     else if (anyBuildingSelected) {
         // AKCJE DLA BUDYNKÓW
-        actions.push_back({ "Deselect", [&player]() {
-            for (auto& b : player.getBuildings())
-                if (b && b->isSelected()) b->setSelected(false);
-        } });
 
         actions.push_back({ "Demolish", [&player, this]() {
-            // TODO: zaimplementuj niszczenie budynku
-            player.addGold(5);
-            addNotification("Building demolished!", sf::Color::Red, 2.f);
+            bool anyDemolished = false;
+            for (auto& b : player.getBuildings()) {
+                if (b && b->isSelected()) {
+                    anyDemolished = true;
+                    break;
+                }
+            }
+
+            player.demolishSelectedBuildings();
+            if (anyDemolished) addNotification("Building demolished!", sf::Color::Red, 2.f);
         } });
 
         
@@ -161,51 +162,142 @@ void UIManager::rebuildActionsPanel(const sf::RenderWindow&, Player& player) {
                 actions.push_back({ "Training...", []() {} });
             }
             else {
-                actions.push_back({ "Train Warrior", [&player, selectedBarracks, this]() {
-                    Cost cost = getUnitCost(UnitType::Warrior);
-                    if (player.canAfford(cost)) {
-                        player.spendResource(ResourceType::Gold, cost.gold);
-                        player.spendResource(ResourceType::Wood, cost.wood);
-                        player.spendResource(ResourceType::Rock, cost.rock);
-                        selectedBarracks->startTraining(UnitType::Warrior);
-                        addNotification("Training Warrior...", sf::Color::Yellow, 2.f);
-                    }
-                    else {
-                        addNotification("Not enough recources!", sf::Color::Red, 2.f);
-                    }
+                unsigned short lvl = selectedBarracks->getLvl();
+				barackLvl = lvl;
+                
+                if ( lvl < 3 ){
+                    actions.push_back({ "Upgrade", [&player, selectedBarracks, this, lvl]() {
+                        Cost cost = getUpgradeCost(BuildingType::Barracks, lvl + 1);
+                        switch (lvl) {
+                        case 3:
+							addNotification("Barracks are already at max level!", sf::Color::Yellow, 5.f);
+                            break;
+                        default:
+                            if (player.canAfford(cost)) {
+                                player.spendResource(ResourceType::Gold, cost.gold);
+                                player.spendResource(ResourceType::Wood, cost.wood);
+                                player.spendResource(ResourceType::Rock, cost.rock);
+                                selectedBarracks->upgrade(player);
+                                addNotification("Barracks are being upgraded...", sf::Color::Yellow, 5.f);
+                            }
+                            else {
+                                addNotification("Not enough recources for upgrade!", sf::Color::Red, 5.f);
+                            }
+                            break;
+}
+                        } });
+                }
+                
+                if (lvl >= 1) {
+                    actions.push_back({ "Train Warrior", [&player, selectedBarracks, this]() {
+                        Cost cost = getUnitCost(UnitType::Warrior);
+                        if (player.canAfford(cost)) {
+                            player.spendResource(ResourceType::Gold, cost.gold);
+                            player.spendResource(ResourceType::Wood, cost.wood);
+                            player.spendResource(ResourceType::Rock, cost.rock);
+                            selectedBarracks->startTraining(UnitType::Warrior);
+                            addNotification("Training Warrior...", sf::Color::Yellow, 5.f);
+                        }
+                        else {
+                            addNotification("Not enough recources!", sf::Color::Red, 5.f);
+                        }
 
-                } });
-                actions.push_back({ "Train Archer", [&player, selectedBarracks,this]() {
-                    Cost cost = getUnitCost(UnitType::Archer);
-                    if (player.canAfford(cost)) {
-                        player.spendResource(ResourceType::Gold, cost.gold);
-                        player.spendResource(ResourceType::Wood, cost.wood);
-                        player.spendResource(ResourceType::Rock, cost.rock);
-                        selectedBarracks->startTraining(UnitType::Archer);
-                        addNotification("Training Archer...", sf::Color::Yellow, 2.f);
-                    }
-                    else {
-                        addNotification("Not enough recources!", sf::Color::Red, 2.f);
-                    }
-                } });
-                actions.push_back({ "Train Hero", [&player, selectedBarracks,this]() {
-                    Cost cost = getUnitCost(UnitType::Hero);
-                    if (player.canAfford(cost)) {
-                        player.spendResource(ResourceType::Gold, cost.gold);
-                        player.spendResource(ResourceType::Wood, cost.wood);
-                        player.spendResource(ResourceType::Rock, cost.rock);
-                        selectedBarracks->startTraining(UnitType::Hero);
-                        addNotification("Training Hero...", sf::Color::Yellow, 2.f);
-                    }
-                    else {
-                        addNotification("Not enough recources!", sf::Color::Red, 2.f);
-                    }
-                } });
+                    } });
+                }
+
+                if (lvl >= 2) {
+                    actions.push_back({ "Train Archer", [&player, selectedBarracks,this]() {
+                        Cost cost = getUnitCost(UnitType::Archer);
+                        if (player.canAfford(cost)) {
+                            player.spendResource(ResourceType::Gold, cost.gold);
+                            player.spendResource(ResourceType::Wood, cost.wood);
+                            player.spendResource(ResourceType::Rock, cost.rock);
+                            selectedBarracks->startTraining(UnitType::Archer);
+                            addNotification("Training Archer...", sf::Color::Yellow, 5.f);
+                        }
+                        else {
+                            addNotification("Not enough recources!", sf::Color::Red, 5.f);
+                        }
+                    } });
+                }
+
+                if (lvl == 3) {
+                    actions.push_back({ "Train Hero", [&player, selectedBarracks,this]() {
+                        Cost cost = getUnitCost(UnitType::Hero);
+                        if (player.canAfford(cost)) {
+                            player.spendResource(ResourceType::Gold, cost.gold);
+                            player.spendResource(ResourceType::Wood, cost.wood);
+                            player.spendResource(ResourceType::Rock, cost.rock);
+                            selectedBarracks->startTraining(UnitType::Hero);
+                            addNotification("Training Hero...", sf::Color::Yellow, 5.f);
+                        }
+                        else {
+                            addNotification("Not enough recources!", sf::Color::Red, 5.f);
+                        }
+                    } });
+                }
             }
         }
     }
 
-    fillPanelGrid(m_actionsPanel, actions, 2, 12.f, 42.f);
+    auto& buttons = fillPanelGrid(m_actionsPanel, actions, 2, 12.f, 42.f);
+
+    // ========== USTAW TOOLTIPY ==========
+    for (auto& btn : buttons) {
+        std::string label = btn.label.getString().toAnsiString();
+
+        if (label == "Upgrade") {
+			auto c = getUpgradeCost(BuildingType::Barracks, barackLvl + 1);
+            btn.tooltip = "Upgrade to level " + std::to_string(barackLvl + 1) + "\nCost: " + std::to_string(c.gold) + "G "
+                + std::to_string(c.wood) + "W "
+				+ std::to_string(c.rock) + "R";
+        }
+        else if (label == "Train Warrior") {
+            auto c = getUnitCost(UnitType::Warrior);
+            float t = getTrainingTime(UnitType::Warrior);
+            btn.tooltip = "Cost: " + std::to_string(c.gold) + "G "
+                + std::to_string(c.wood) + "W "
+                + std::to_string(c.rock) + "R\nTime: "
+                + std::to_string(static_cast<int>(t)) + "s\nFood spend: "
+                + std::to_string(c.food) + "/s";
+        }
+        else if (label == "Train Archer") {
+            auto c = getUnitCost(UnitType::Archer);
+            float t = getTrainingTime(UnitType::Archer);
+            btn.tooltip = "Cost: " + std::to_string(c.gold) + "G "
+                + std::to_string(c.wood) + "W "
+                + std::to_string(c.rock) + "R\nTime: "
+                + std::to_string(static_cast<int>(t)) + "s\nFood spend: "
+                + std::to_string(c.food) + "/s";
+        }
+        else if (label == "Train Hero") {
+            auto c = getUnitCost(UnitType::Hero);
+            float t = getTrainingTime(UnitType::Hero);
+            btn.tooltip = "Cost: " + std::to_string(c.gold) + "G "
+                + std::to_string(c.wood) + "W "
+                + std::to_string(c.rock) + "R\nTime: "
+                + std::to_string(static_cast<int>(t)) + "s\nFood spend: "
+                + std::to_string(c.food) + "/s";
+        }
+        else if (label == "Demolish") {
+            btn.tooltip = "Destroy building";
+        }
+        else if (label == "Build") {
+            btn.tooltip = "Open build menu";
+        }
+        else if (label == "Stop") {
+            btn.tooltip = "Stop all selected units";
+        }
+        else if (label == "Aggressive") {
+            btn.tooltip = "Attack enemies on sight";
+        }
+        else if (label == "Passive") {
+            btn.tooltip = "Flee from enemies";
+        }
+        else if (label == "Neutral") {
+            btn.tooltip = "Defend only when attacked";
+        }
+    }
 
 
 }
@@ -318,6 +410,7 @@ void UIManager::drawRecourcesBarUI(sf::RenderWindow& window, const Player& playe
     ss << "Wood: " << player.getResource(ResourceType::Wood) << std::endl;
     ss << "Rock: " << player.getResource(ResourceType::Rock) << std::endl;
 	ss << "Gold: " << player.getResource(ResourceType::Gold) << std::endl;
+	ss << "Food: " << player.getResource(ResourceType::Food) << std::endl;
     sf::Text t(m_font, ss.str(), 18);
 	t.setFillColor(sf::Color::White);
 	t.setPosition({ x, y });
@@ -348,11 +441,24 @@ void UIManager::drawBuildTypesUI(sf::RenderWindow& window, Player& player)
         return;
 	}
 
-    if (player.hasTownHall()) {
+    actions.push_back({ "Fence", [&player,this]() {
+        auto cost = getBuildingCost(BuildingType::Fence);
+        if (player.canAfford(cost)) {
+            player.beginPlaceBuilding(BuildingType::Fence);
+            //BEZ NOTYFIKACJI BO WYSWIETLA SIE PRZY KLIKU, NIE PRZY ROZPOCZECIU BUDOWY
+        }
+        else {
+            addNotification("Not enough recources!", sf::Color::Red, 2.f);
+
+        }
+    } });
+
+    if (!player.hasTownHall()) {
         actions.push_back({ "Build Townhall", [&player,this]() {
                 auto cost = getBuildingCost(BuildingType::TownHall);
                 if (player.canAfford(cost)) {
                     player.beginPlaceBuilding(BuildingType::TownHall);
+                    //BEZ NOTYFIKACJI BO WYSWIETLA SIE PRZY KLIKU, NIE PRZY ROZPOCZECIU BUDOWY
                 }
                 else {
                     addNotification("Not enough recources!", sf::Color::Red, 2.f);
@@ -364,6 +470,7 @@ void UIManager::drawBuildTypesUI(sf::RenderWindow& window, Player& player)
         auto cost = getBuildingCost(BuildingType::Quarry);
         if (player.canAfford(cost)) {
             player.beginPlaceBuilding(BuildingType::Quarry);
+            //BEZ NOTYFIKACJI BO WYSWIETLA SIE PRZY KLIKU, NIE PRZY ROZPOCZECIU BUDOWY
         }
         else {
             addNotification("Not enough recources!", sf::Color::Red, 2.f);
@@ -374,6 +481,7 @@ void UIManager::drawBuildTypesUI(sf::RenderWindow& window, Player& player)
         auto cost = getBuildingCost(BuildingType::Foresters);
         if (player.canAfford(cost)) {
             player.beginPlaceBuilding(BuildingType::Foresters);
+            //BEZ NOTYFIKACJI BO WYSWIETLA SIE PRZY KLIKU, NIE PRZY ROZPOCZECIU BUDOWY
         }
         else {
             addNotification("Not enough recources!", sf::Color::Red, 2.f);
@@ -383,6 +491,7 @@ void UIManager::drawBuildTypesUI(sf::RenderWindow& window, Player& player)
             auto cost = getBuildingCost(BuildingType::GoldMine);
         if (player.canAfford(cost)) {
             player.beginPlaceBuilding(BuildingType::GoldMine);
+            //BEZ NOTYFIKACJI BO WYSWIETLA SIE PRZY KLIKU, NIE PRZY ROZPOCZECIU BUDOWY
         }
         else {
             addNotification("Not enough recources!", sf::Color::Red, 2.f);
@@ -392,14 +501,68 @@ void UIManager::drawBuildTypesUI(sf::RenderWindow& window, Player& player)
             auto cost = getBuildingCost(BuildingType::Barracks);
         if (player.canAfford(cost)) {
             player.beginPlaceBuilding(BuildingType::Barracks);
+            //BEZ NOTYFIKACJI BO WYSWIETLA SIE PRZY KLIKU, NIE PRZY ROZPOCZECIU BUDOWY
         }
         else {
             addNotification("Not enough recources!", sf::Color::Red, 2.f);
         }
 	} });
+    actions.push_back({"Build Farm", [&player,this]() {
+            auto cost = getBuildingCost(BuildingType::Farm);
+            if (player.canAfford(cost)) {
+                player.beginPlaceBuilding(BuildingType::Farm);
+                //BEZ NOTYFIKACJI BO WYSWIETLA SIE PRZY KLIKU, NIE PRZY ROZPOCZECIU BUDOWY
+            }
+            else {
+                addNotification("Not enough recources!", sf::Color::Red, 2.f);
+            }
+        } });
 
 
-	fillPanelGrid(m_buildPanel, actions, /*columns=*/1, /*padding=*/8.f, /*rowHeight=*/38.f);
+    auto& buttons = fillPanelGrid(m_buildPanel, actions, 1, 8.f, 38.f);
+
+    // ========== USTAW TOOLTIPY DLA BUDYNKÓW ==========
+    for (auto& btn : buttons) {
+        std::string label = btn.label.getString().toAnsiString();
+
+        if (label == "Build TownHall") {
+            auto cost = getBuildingCost(BuildingType::TownHall);
+            std::stringstream ss;
+            ss << "Cost: " << cost.gold << "G, " << cost.wood << "W, " << cost.rock << "R\nMain building - required for others ";
+            btn.tooltip = ss.str();
+        }
+        else if (label == "Build Quarry") {
+            auto cost = getBuildingCost(BuildingType::Quarry); 
+            std::stringstream ss;
+            ss << "Cost: " << cost.gold << "G, " << cost.wood << "W, " << cost.rock << "R\nGenerates: Rock\nRequires: Mountain tile nearby";
+            btn.tooltip = ss.str();
+        }
+        else if (label == "Build Forester's Lodge") {
+            auto cost = getBuildingCost(BuildingType::Foresters);
+            std::stringstream ss;
+            ss << "Cost: " << cost.gold << "G, " << cost.wood << "W, " << cost.rock << "R\nGenerates: Wood";
+            btn.tooltip = ss.str();
+        }
+        else if (label == "Build GoldMine") {
+            auto cost = getBuildingCost(BuildingType::GoldMine);
+            std::stringstream ss;
+            ss << "Cost: " << cost.gold << "G, " << cost.wood << "W, " << cost.rock << "R\nGenerates: Gold\nRequires: Sand tile";
+            btn.tooltip = ss.str();
+        }
+        else if (label == "Build Barracks") {
+            auto cost = getBuildingCost(BuildingType::Barracks);
+            std::stringstream ss;
+            ss << "Cost: " << cost.gold << "G, " << cost.wood << "W, " << cost.rock << "R\nTrains: Warrior, Archer, Hero";
+            btn.tooltip = ss.str();
+        }
+        else if (label == "Build Farm") {
+            auto cost = getBuildingCost(BuildingType::Farm);
+            std::stringstream ss;
+            ss << "Cost: " << cost.gold << "G, " << cost.wood << "W, " << cost.rock << "R\nGenerates: Food\nRequired for training units";
+			btn.tooltip = ss.str();
+        }
+
+    }
 }
 
 void UIManager::drawInfoPanelOverlay(sf::RenderWindow& window, const Player& player) {
@@ -481,7 +644,45 @@ void UIManager::drawInfoPanelOverlay(sf::RenderWindow& window, const Player& pla
                 tt.setPosition({ x, y + 130.f });
                 window.draw(tt);
             }
-           
+        }
+        else if (selectedBuilding->getType() == BuildingType::GoldMine) {
+            auto* goldMine = dynamic_cast<GoldMine*>(selectedBuilding);
+            if (goldMine) {
+				sf::Text tt(m_font, "+1G/s", 16);
+                tt.setFillColor(sf::Color::Yellow);
+                tt.setPosition({x, y + 130.f});
+                window.draw(tt);
+			}
+        }
+        else if (selectedBuilding->getType() == BuildingType::Quarry) {
+            auto* quarry = dynamic_cast<Quarry*>(selectedBuilding);
+            if (quarry) {
+                sf::Text tt(m_font, "+5R/s", 16);
+                tt.setFillColor(sf::Color::Yellow);
+                tt.setPosition({ x, y + 130.f });
+                window.draw(tt);
+            }
+        }
+        else if (selectedBuilding->getType() == BuildingType::Foresters) {
+            auto* foresters= dynamic_cast<Foresters*>(selectedBuilding);
+            if (foresters) {
+                sf::Text tt(m_font, "+5W/s", 16);
+                tt.setFillColor(sf::Color::Yellow);
+                tt.setPosition({ x, y + 130.f });
+                window.draw(tt);
+            }
+        }
+        else if (selectedBuilding->getType() == BuildingType::Farm) {
+            auto* farm = dynamic_cast<Farm*>(selectedBuilding);
+            if (farm) {
+                int output = player.calculateFoodIncome();
+				std::ostringstream ss;
+				ss << output << "F/s";
+                sf::Text tt(m_font, ss.str(), 16);
+                tt.setFillColor(sf::Color::Yellow);
+                tt.setPosition({ x, y + 130.f });
+                window.draw(tt);
+            }
         }
 
 		drawHealthBarUI(window, { x, y + 84.f }, { m_infoPanel.bounds.size.x - 24.f, 16.f }, hp01);
@@ -666,14 +867,14 @@ void UIManager::drawTooltip(sf::RenderWindow& window)
     if (!m_tooltip) return;
 
     const float padding = 8.f;
-    const float maxWidth = 200.f;
+    const float maxWidth = 300.f;
 
     sf::Text text(m_font, m_tooltip->text, 14);
     text.setFillColor(sf::Color(255, 255, 255, static_cast<std::uint8_t>(m_tooltip->alpha)));
 
     auto bounds = text.getLocalBounds();
     float w = std::min(bounds.size.x + padding * 2.f, maxWidth);
-    float h = bounds.size.y + padding * 2.f;
+    float h = bounds.size.y + (padding+2.f) * 2.f;
 
     // Pozycja: obok kursora, ale w granicach ekranu
     float x = m_tooltip->position.x + 15.f;
@@ -758,6 +959,57 @@ bool UIManager::handleEvent(const sf::Event& event, sf::RenderWindow& window, Pl
         rebuildAll(window, player);
     }
 
+    sf::Vector2f mousePos(
+        static_cast<float>(sf::Mouse::getPosition(window).x),
+        static_cast<float>(sf::Mouse::getPosition(window).y)
+    );
+
+
+    // Sprawdź hover nad przyciskami
+    bool hoveringButton = false;
+    std::string hoveredTooltip;
+
+    // 1. Build panel (najwyżej, tylko gdy widoczny)
+    if (m_showBuildPanel && m_buildPanel.bounds.contains(mousePos)) {
+        for (const auto& btn : m_buildPanel.buttons) {
+            if (btn.hitTest(mousePos) && !btn.tooltip.empty()) {
+                hoveredTooltip = btn.tooltip;
+                hoveringButton = true;
+                break;
+            }
+        }
+    }
+
+    // 2. Actions panel (tylko jeśli nie hover nad buildPanel)
+    if (!hoveringButton && m_actionsPanel.bounds.contains(mousePos)) {
+        for (const auto& btn : m_actionsPanel.buttons) {
+            if (btn.hitTest(mousePos) && !btn.tooltip.empty()) {
+                hoveredTooltip = btn.tooltip;
+                hoveringButton = true;
+                break;
+            }
+        }
+    }
+
+    // 3. Info panel (najniżej)
+    if (!hoveringButton && m_infoPanel.bounds.contains(mousePos)) {
+        for (const auto& btn : m_infoPanel.buttons) {
+            if (btn.hitTest(mousePos) && !btn.tooltip.empty()) {
+                hoveredTooltip = btn.tooltip;
+                hoveringButton = true;
+                break;
+            }
+        }
+    }
+
+    // Ustaw lub wyczyść tooltip
+    if (hoveringButton) {
+        setTooltip(hoveredTooltip, mousePos);
+    }
+    else {
+        clearTooltip();
+    }
+
     // klik w UI
     if (const auto* mb = event.getIf<sf::Event::MouseButtonPressed>()) {
         if (mb->button == sf::Mouse::Button::Left) {
@@ -766,10 +1018,10 @@ bool UIManager::handleEvent(const sf::Event& event, sf::RenderWindow& window, Pl
                 static_cast<float>(mb->position.y)
             );
 
-            // priorytet: actions -> info -> map
+            // priorytet: build -> actions -> info -> map
 
             if (m_showBuildPanel && m_buildPanel.handleClick(mousePx)) {
-				m_showBuildPanel = false; // klik w panel budowy też go ukrywa
+				m_showBuildPanel = false; 
                 return true;
             }
 
@@ -782,7 +1034,7 @@ bool UIManager::handleEvent(const sf::Event& event, sf::RenderWindow& window, Pl
     return false;
 }
 
-void UIManager::fillPanelGrid(
+std::vector<UIButton>& UIManager::fillPanelGrid(
     UIPanel& panel,
     const std::vector<Action>& actions,
     int columns = 2,
@@ -790,7 +1042,7 @@ void UIManager::fillPanelGrid(
     float rowHeight = 42.f
 ) {
     panel.buttons.clear();
-	if (actions.empty()) return;
+	if (actions.empty()) return panel.buttons;
 
 	const float btnW = (panel.bounds.size.x - padding * (columns + 1)) / static_cast<float>(columns);
 	const float btnH = rowHeight;
@@ -817,5 +1069,8 @@ void UIManager::fillPanelGrid(
 
 		b.onClick = actions[i].second;
 		panel.buttons.push_back(std::move(b));
+
+        
     }
+    return panel.buttons;
 }

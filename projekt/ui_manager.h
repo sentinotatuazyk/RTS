@@ -152,7 +152,7 @@ private:
     std::size_t computeSelectionHashBuilding(const Player& player) const;
 
     // Jeden wspólny “layout engine” dla przycisków (super przy rozbudowie UI)
-    void fillPanelGrid(
+    std::vector<UIButton>& fillPanelGrid(
         UIPanel& panel,
         const std::vector<Action>& actions,
         int columns,

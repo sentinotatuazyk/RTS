@@ -3,7 +3,6 @@
 #include <vector>
 #include <SFML/Graphics.hpp>
 #include <memory>
-#include "unit.h"
 #include "buildings.h"
 #include "API.h"
 #include "map.h"
@@ -20,17 +19,31 @@ public:
     void draw(sf::RenderWindow& window);
     void handleEvent(const sf::Event& event, const sf::RenderWindow& window);
 
-	void addGold(int amount);
-	unsigned int getResource(ResourceType type) const;
+	int getResource(ResourceType type) const;
 	void addResource(ResourceType type, int amount);
 	void spendResource(ResourceType type, int amount);
 
     void addUnit(sf::Vector2f position, UnitType type);
+	int getUnitCount() const;
+	int getUnitCount(UnitType type) const;
+	void changeUnitCount(UnitType type, int amount);
     bool canAfford(Cost cost) const;
     std::vector<Unit>& getUnits();
     const std::vector<Unit>& getUnits() const;
     void addBuilding(sf::Vector2f position, BuildingType type);
+	int getBuildingCount() const;
+	int getBuildingCount(BuildingType type) const;
+	void changeBuildingCount(BuildingType type, int amount);
+
+    void updateAllFenceSegments();
+
+	void removeBuilding(Building* toremove);
+    void demolishSelectedBuildings();
     const std::vector < std::unique_ptr < Building >> &getBuildings() const;
+
+    int getFoodIncome() const;
+	void changeFoodIncome(int amount) { m_foodIncome += amount; }
+    int calculateFoodIncome() const;
     bool hasTownHall() const;
 
     void beginPlaceBuilding(BuildingType type);
@@ -42,9 +55,31 @@ private:
     unsigned int m_gold;
     unsigned int m_rocks;
 	unsigned int m_wood;
+	int m_food;
+
+	int m_foodIncome = 0;
 
     std::vector<Unit> m_units;
+	int m_unitCount = 0;
+    std::unordered_map<UnitType, int> m_unitTable = {
+        {UnitType::Worker,  0}, 
+		{UnitType::Warrior, 0},
+		{UnitType::Archer,  0},
+        {UnitType::Hero,    0} 
+    };
+    
+
     std::vector<std::unique_ptr<Building>> m_buildings;
+	int m_buildingCount = 0;
+    std::unordered_map<BuildingType, int> m_buildingTable = {
+        {BuildingType::TownHall,  0},
+        {BuildingType::Quarry,    0},
+        {BuildingType::Barracks,  0},
+        {BuildingType::GoldMine,  0},
+        {BuildingType::Foresters, 0},
+        {BuildingType::Farm,      0},
+        {BuildingType::Fence,     0}
+    };
 
     sf::RectangleShape m_selectionBox;
     sf::Vector2f m_startClick;

@@ -258,3 +258,173 @@ void Foresters::update(float dt, Player& p) {
     }
 }
 
+Farm::Farm(sf::Vector2f pos) : Building(pos, 500) {
+    m_type = BuildingType::Farm;
+    m_shape.setFillColor(sf::Color(255, 0, 255)); // Magenta
+    m_shape.setOutlineThickness(1.f);
+    m_shape.setOutlineColor(sf::Color(255, 102, 255)); // Różowy
+    m_shape.setOrigin({ 20.f, 20.f });
+    m_miningTimer = 1.f;
+}
+Farm::~Farm() = default;
+
+void Farm::update(float dt, Player& p) {
+    m_miningTimer -= dt;
+    if (m_miningTimer <= 0.f) {
+        p.addResource(ResourceType::Food, p.calculateFoodIncome() / p.getBuildingCount(BuildingType::Farm));
+        m_miningTimer = 1.f;
+    }
+
+    if (m_isSelected) {
+        m_shape.setOutlineColor(sf::Color::White);
+    }
+    else {
+        m_shape.setOutlineColor(sf::Color(255, 102, 255));
+    }
+}
+
+sf::Texture* Fence::fenceAtlas = nullptr;
+
+Fence::Fence(sf::Vector2f pos) : Building(pos, 300) {
+    m_type = BuildingType::Fence;
+    m_shape.setSize({ 32.f, 32.f });
+    m_shape.setOrigin({10.f,10.f });
+
+    if (fenceAtlas) {
+        m_shape.setTexture(fenceAtlas);
+    }
+}
+
+Fence::~Fence()
+{
+}
+
+void Fence::update(float dt, Player& p)
+{
+}
+
+void Fence::draw(sf::RenderWindow& window)
+{
+    window.draw(m_shape);
+}
+
+void Fence::updateSegment(const std::vector<std::unique_ptr<Building>>& allBuildings)
+{
+    sf::Vector2f pos = getPosition();
+    float size = 32.f; // odległość między środkami sąsiednich płotów
+
+    bool left = hasFenceNeighbor({ pos.x - size, pos.y }, allBuildings);
+    bool right = hasFenceNeighbor({ pos.x + size, pos.y }, allBuildings);
+    bool up = hasFenceNeighbor({ pos.x, pos.y - size }, allBuildings);
+    bool down = hasFenceNeighbor({ pos.x, pos.y + size }, allBuildings);
+
+    bool upup = false, upleft = false, upright = false, downdown = false, downleft = false, downright = false, leftleft = false, leftup = false, leftdown = false, rightright = false, rightup = false, rightdown = false;
+
+    bool isUpOnRight = false, isDownOnRight = false;
+    if (up) {
+        upup = hasFenceNeighbor({ pos.x, pos.y - size * 2 }, allBuildings);
+        upleft = hasFenceNeighbor({ pos.x - size, pos.y - size }, allBuildings);
+        upright = hasFenceNeighbor({ pos.x + size, pos.y - size }, allBuildings);
+		if (getFenceStateOnPos({ pos.x, pos.y - size }, allBuildings) == FenceStates::RightSide) isUpOnRight = true;
+    }
+
+    if (down) {
+        downdown = hasFenceNeighbor({ pos.x, pos.y + size * 2 }, allBuildings);
+        downleft = hasFenceNeighbor({ pos.x - size, pos.y + size }, allBuildings);
+        downright = hasFenceNeighbor({ pos.x + size, pos.y + size }, allBuildings);
+        if (getFenceStateOnPos({ pos.x, pos.y + size }, allBuildings) == FenceStates::RightSide) isDownOnRight = true;
+    }
+
+    if (left) {
+        leftleft = hasFenceNeighbor({ pos.x - size * 2, pos.y }, allBuildings);
+        leftup = hasFenceNeighbor({ pos.x - size, pos.y - size }, allBuildings);
+        leftdown = hasFenceNeighbor({ pos.x - size, pos.y + size }, allBuildings);
+    }
+
+    if (right) {
+        rightright = hasFenceNeighbor({ pos.x + size * 2, pos.y }, allBuildings);
+        rightup = hasFenceNeighbor({ pos.x + size, pos.y - size }, allBuildings);
+        rightdown = hasFenceNeighbor({ pos.x + size, pos.y + size }, allBuildings);
+    }
+
+    // Atlas 2x4, sprite 32x32:
+    //       x=0        x=32
+    // y=0:  [0]Front   [1]LeftBendDown
+    // y=32: [2]RightBD [3]LeftBendUp
+    // y=64: [4]LeftSide [5]RightBendUp
+    // y=96: [6]RightSide [pusty]
+
+    int spriteIndex = 0;
+
+    if ((left || right) && !up && !down) {        // ✅ NAWIASY
+        m_state = FenceStates::Front;             // ─
+        spriteIndex = 0;
+    }
+    else if (up && left && !right && !down) {
+        m_state = FenceStates::LeftBendDown;      // ┐ ✅ POPRAWIONE
+        spriteIndex = 3;
+    }
+    else if (up && right && !left && !down) {
+        m_state = FenceStates::RightBendDown;     // ┌
+        spriteIndex = 5;
+    }
+    else if (down && left && !right && !up) {
+        m_state = FenceStates::LeftBendUp;        // ┘ ✅ POPRAWIONE
+        spriteIndex = 1;
+    }
+    else if (up && down && left && !right) {
+        m_state = FenceStates::LeftSide;          // │ (sąsiad z lewej)
+        spriteIndex = 4;
+    }
+    else if (down && right && !left && !up) {
+        m_state = FenceStates::RightBendUp;       // └
+        spriteIndex = 2;
+    }
+    else if (((up && upleft) || (down && downleft)) && !left && !right || (isUpOnRight || isDownOnRight)) {
+        m_state = FenceStates::RightSide;         // │ (sąsiad z prawej)
+        spriteIndex = 6;
+    }
+    else if ((up || down) && !left && !right) {
+        m_state = FenceStates::LeftSide;            // │ domyślnie
+        spriteIndex = 4;
+    }
+    else {
+        m_state = FenceStates::Front;               // ─ domyślnie
+        spriteIndex = 0;
+    }
+
+    int col = spriteIndex % 2;
+    int row = spriteIndex / 2;
+    int atlasX = col * 32;
+    int atlasY = row * 32;
+
+    m_shape.setTextureRect(sf::IntRect({ atlasX, atlasY }, { 32, 32 }));
+
+    std::cout << "Fence at (" << pos.x << "," << pos.y << ") "
+        << "L:" << left << " R:" << right << " U:" << up << " D:" << down
+        << " -> sprite:" << spriteIndex
+        << " rect:(" << atlasX << "," << atlasY << ")"
+		<< std::endl << "===========================" << std::endl;
+}
+
+FenceStates Fence::getFenceState() const
+{
+    return m_state;
+}
+
+bool Fence::hasFenceNeighbor(const sf::Vector2f& pos, const std::vector<std::unique_ptr<Building>>& buildings)
+{
+    for (const auto& b : buildings) {
+        if (b.get() == this) continue; // pomiń samego siebie
+        if (b->getType() != BuildingType::Fence) continue;
+
+        // Sprawdź czy pozycja się pokrywa (z małą tolerancją)
+        float dx = std::abs(b->getPosition().x - pos.x);
+        float dy = std::abs(b->getPosition().y - pos.y);
+        if (dx < 1.f && dy < 1.f) return true;
+    }
+    return false;
+}
+
+
+

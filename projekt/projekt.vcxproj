@@ -154,6 +154,13 @@
     <Font Include="resources\geistmono_light.ttf" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="resources\fence_front.png" />
+    <Image Include="resources\fence_leftbend.png" />
+    <Image Include="resources\fence_leftbend_up.png" />
+    <Image Include="resources\fence_rightbend.png" />
+    <Image Include="resources\fence_rightbend_up.png" />
+    <Image Include="resources\fence_sideleft.png" />
+    <Image Include="resources\fence_sideright.png" />
     <Image Include="resources\skull.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
