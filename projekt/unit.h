@@ -6,8 +6,10 @@
 #include "enums.h"
 #include <cmath>
 #include <utility>
+#include <vector>
 
 class Game;
+class Map;
 
 class EXPORT_API Unit 
 {
@@ -17,9 +19,9 @@ public:
 	~Unit();
 	Unit(const Unit& other);
 	Unit& operator=(const Unit& other);
-	void update(float dt);
+	void update(float dt, const Map& map);
 	void draw(sf::RenderWindow& window);
-	void moveTo(sf::Vector2f target);
+	void moveTo(sf::Vector2f target, const Map& map);
 	void spawn(sf::Vector2f position, UnitType type);
 	void setSelected(bool selected);
 	bool isSelected() const;
@@ -38,7 +40,7 @@ public:
 	void takeDamage(int dmg);
 	bool isDead() const;
 
-	void startBuildJob(BuildingType type, sf::Vector2f pos);
+	void startBuildJob(BuildingType type, sf::Vector2f pos, const Map& map);
 	bool hasBuildJob() const;
 	bool isBuildingNow() const;
 	BuildingType buildJobType() const;
@@ -48,10 +50,21 @@ public:
 	float getBuildProgress01() const;
 	sf::Vector2f getBuildSitePos() const; 
 
+
+	void setPath(const std::vector<sf::Vector2f>& path);
+	void clearPath();
+	bool hasPath() const;
+	void followPath(float dt, float speed, const Map& map);
+
+
+
 private:
 	sf::Vector2f m_position;
 	sf::CircleShape m_shape;
 	
+	std::vector<sf::Vector2f> m_path;
+	std::size_t m_pathIndex = 0;
+	static constexpr float PATH_REACHED_DIST = 5.f;
 
 	UnitType m_type;
 	UnitState m_state = UnitState::Neutral;

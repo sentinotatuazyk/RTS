@@ -120,6 +120,7 @@ public:
 	bool handleEvent(const sf::Event& event, sf::RenderWindow& window, Player& player);
 
 	void drawPausedOverlay(sf::RenderWindow& window);
+	void drawGameOverScreen(sf::RenderWindow& window, const std::string& reason);
 
     void addNotification(const std::string& text, sf::Color color = sf::Color::White, float duration = 3.f);
     void addNotification(const std::string& text, float duration);
@@ -141,6 +142,7 @@ private:
     void drawHealthBarUI(sf::RenderWindow& window, sf::Vector2f pos, sf::Vector2f size, float hp01);
 	void drawRecourcesBarUI(sf::RenderWindow& window, const Player& player);
 	void drawBuildTypesUI(sf::RenderWindow& window, Player& player);
+
 
     void drawMiniMap(sf::RenderWindow& window, const Player& player, const sf::View& view);
 

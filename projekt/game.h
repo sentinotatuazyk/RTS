@@ -16,6 +16,10 @@ public:
     ~Game();
     void run();
 private:
+
+    bool m_gameOver = false;
+    std::string m_gameOverReason;
+
     AppSettings m_settings;
     SettingsScreen m_settingsScreen;
     enum class State { Menu, Settings, Playing, Paused, Exiting };
@@ -23,6 +27,10 @@ private:
     void procesEvents();
     void update(float deltaTime);
     void render();
+	void checkGameOver();
+
+	void checkFoodPenalty(float dt);
+	float m_foodPenaltyTimer = 0.f;
 
     sf::RenderWindow m_window;
     sf::Clock m_clock;
@@ -73,6 +81,7 @@ private:
         std::vector<Target>& targets,
         float aggroRange,
         bool skipIfMoving,
+        const Map& map,
         bool escape = false)
     {
         for (auto* attacker : attackers) {
@@ -95,7 +104,7 @@ private:
                     if (length > 0.f) {
                         dir /= length;
                         dir *= aggroRange;
-                        attacker->moveTo(attacker->getPosition() + dir);
+                        attacker->moveTo(attacker->getPosition() + dir, map);
                     }
                 }
                 continue;
@@ -116,7 +125,7 @@ private:
             }
 
             if (targetEntity) {
-                if (closestDist > attacker->m_attackRange) attacker->moveTo(targetEntity->getPosition());
+                if (closestDist > attacker->m_attackRange) attacker->moveTo(targetEntity->getPosition(), map);
                 else attacker->stop();
             }
         }

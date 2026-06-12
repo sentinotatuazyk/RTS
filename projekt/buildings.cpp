@@ -13,8 +13,10 @@ Building::Building(const Building& other) = default;
 Building::~Building() = default;
 
 void Building::draw(sf::RenderWindow& window) {
-    window.draw(m_shape);
-	drawHealthBar(window, m_position, static_cast<float>(m_health) / m_maxHealth);
+    if (!isDestroyed()) {
+        window.draw(m_shape);
+        drawHealthBar(window, m_position, static_cast<float>(m_health) / m_maxHealth);
+    }
 }
 
 std::pair<int, int> Building::getHealth() const

@@ -340,6 +340,31 @@ void UIManager::drawPausedOverlay(sf::RenderWindow& window)
     window.draw(pausedText);
 }
 
+void UIManager::drawGameOverScreen(sf::RenderWindow& window, const std::string& reason)
+{
+	sf::RectangleShape overlay({ static_cast<float>(window.getSize().x), static_cast<float>(window.getSize().y) });
+	overlay.setFillColor(sf::Color(20, 20, 20, 200));
+	overlay.setPosition({ 0.f, 0.f });
+
+	sf::Text gameOverText(m_font);
+	gameOverText.setString("GAME OVER");
+	gameOverText.setCharacterSize(70);
+	auto b = gameOverText.getLocalBounds();
+	gameOverText.setFillColor(sf::Color::Red);
+    gameOverText.setOrigin({ b.position.x + b.size.x * 0.5f, b.position.y + b.size.y * 0.5f });
+    gameOverText.setPosition({ window.getSize().x * 0.5f, window.getSize().y * 0.5f - 50.f });
+
+	sf::Text reasonText(m_font);
+	reasonText.setString(reason);
+	reasonText.setCharacterSize(30);
+	b = reasonText.getLocalBounds();
+	reasonText.setFillColor(sf::Color::White);
+    reasonText.setOrigin({ b.position.x + b.size.x * 0.5f, b.position.y + b.size.y * 0.75f });
+	reasonText.setPosition({ window.getSize().x * 0.5f, window.getSize().y * 0.5f + 30.f });
+
+
+}
+
 void UIManager::addNotification(const std::string& text, sf::Color color, float duration)
 {
     UINotification n;

@@ -1,4 +1,8 @@
 #include "enemy.h"
+#include "enemy.h"
+#include "enemy.h"
+#include "enemy.h"
+#include "enemy.h"
 #include "utils.hpp"
 Enemy::Enemy() : m_speed(150.f), m_health(100), m_isMoving(false), m_isDead(false)
 {
@@ -100,10 +104,24 @@ void Enemy::setPosition(sf::Vector2f position)
 	m_targetPosition = position;
 }
 
-void Enemy::moveTo(sf::Vector2f target)
+void Enemy::moveTo(sf::Vector2f target, const Map& map)
 {
-    m_targetPosition = target;
-    m_isMoving = true;
+    clearPath();
+
+    // Znajdź ścieżkę A*
+    m_path = map.findPath(m_position, target);
+
+    if (!m_path.empty()) {
+        m_pathIndex = 0;
+        m_isMoving = true;
+        m_targetPosition = m_path[0]; // pierwszy waypoint
+    }
+    else {
+        // Fallback: bezpośredni ruch jeśli A* nie znalazł ścieżki
+        // (np. cel jest bardzo blisko lub na tym samym tile)
+        m_targetPosition = target;
+        m_isMoving = true;
+    }
 }
 
 float Enemy::getRadius() const
@@ -121,6 +139,11 @@ void Enemy::setState(EnemyState state){
 	m_state = state;
 }
 
+EnemyType Enemy::getType()
+{
+    return m_type;
+}
+
 EnemyState Enemy::getState() const
 {
     return m_state;
@@ -133,4 +156,57 @@ void Enemy::takeDamage(int dmg) {
 
 bool Enemy::isDead() const {
     return m_health <= 0;
+}
+
+void Enemy::setPath(const std::vector<sf::Vector2f>& path)
+{
+    m_path = path;
+    m_pathIndex = 0;
+    if (!m_path.empty()) {
+        m_isMoving = true;
+        m_targetPosition = m_path[0];
+    }
+}
+
+void Enemy::clearPath()
+{
+    m_path.clear();
+    m_pathIndex = 0;
+}
+
+bool Enemy::hasPath() const
+{
+    return !m_path.empty() && m_pathIndex < m_path.size();
+}
+
+void Enemy::followPath(float dt, float speed, const Map& map)
+{
+    if (!m_isMoving || m_path.empty()) return;
+
+    // Poruszaj się w stronę aktualnego waypointu
+    sf::Vector2f direction = m_targetPosition - m_position;
+    float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+
+    if (distance < PATH_REACHED_DIST) {
+        // Osiągnięto waypoint — przejdź do następnego
+        ++m_pathIndex;
+        if (m_pathIndex >= m_path.size()) {
+            // Koniec ścieżki
+            m_isMoving = false;
+            m_position = m_targetPosition;
+            clearPath();
+            return;
+        }
+        m_targetPosition = m_path[m_pathIndex];
+        // Przelicz direction dla nowego celu
+        direction = m_targetPosition - m_position;
+        distance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+    }
+
+    if (distance > 0.0001f) {
+        sf::Vector2f normalizedDir = direction / distance;
+        m_position += normalizedDir * speed * dt;
+    }
+
+    m_shape.setPosition(m_position);
 }

@@ -4,6 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <random>
+#include <sstream>
 
 constexpr unsigned int mX = 150; //  sf::VideoMode::getDesktopMode().size.x / 40 + 1
 constexpr unsigned int mY = 100; //  sf::VideoMode::getDesktopMode().size.y / 40 + 1
@@ -48,6 +49,8 @@ Game::Game() :
 	m_ui.forceRebuild(m_window, m_player);
 
 	m_player.addBuilding(findValidSpawnPosition(centerX, centerY), BuildingType::TownHall);
+
+	m_player.addBuilding(findValidSpawnPosition(1000.f, 150.f), BuildingType::Barracks);
 
 	m_player.addUnit(findValidSpawnPosition(centerX + 80.f, centerY - 50.f), UnitType::Worker);
 	m_player.addUnit(findValidSpawnPosition(centerX + 80.f, centerY + 50.f), UnitType::Worker);
@@ -208,6 +211,9 @@ void Game::update(float deltaTime) {
 		handleAi();
 		handleCombat(deltaTime);
 		removeDeadEntities();
+
+		checkGameOver();
+		checkFoodPenalty(deltaTime);
 	}
 	
 }
@@ -243,9 +249,38 @@ void Game::render() {
 			m_ui.drawPausedOverlay(m_window);
 		}
 
+		if (m_gameOver) {
+			m_ui.drawGameOverScreen(m_window, m_gameOverReason);
+		}
+
 
 	}
 	m_window.display();
+}
+
+void Game::checkGameOver()
+{
+	if (!m_player.hasTownHall() && m_player.getBuildingCount(BuildingType::TownHall) == 0) {
+		m_gameOver = true;
+		m_gameOverReason = "Town Hall was destroyed!";
+	}
+}
+
+void Game::checkFoodPenalty(float dt)
+{
+	m_foodPenaltyTimer += dt;
+
+	if (m_foodPenaltyTimer >= 1.f) {
+		m_foodPenaltyTimer = 0.f;
+		int food = m_player.getResource(ResourceType::Food);
+
+		if (food < 0) {
+			for (auto& unit : m_player.getUnits()) {
+				unit.takeDamage(5); // stała kara 5 HP na sekundę, można dostosować
+			}
+		}
+
+	}
 }
 
 void Game::procesEvents() {
@@ -275,7 +310,7 @@ void Game::procesEvents() {
 				continue;
 			}
 			m_window.setView(m_view);
-			m_player.handleEvent(*event, m_window);
+			m_player.handleEvent(*event, m_window, m_map);
 
 			// KLAWIATURA
 			if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
@@ -345,6 +380,7 @@ void Game::procesEvents() {
 }
 
 void Game::handleCombat(float dt) {
+	bool attackUnit = false;
 	for (auto& enemy : m_enemies) {
 		if (enemy.m_attackTimer > 0.f) continue; 
 
@@ -353,9 +389,23 @@ void Game::handleCombat(float dt) {
 			float dist = std::sqrt(dir.x * dir.x + dir.y * dir.y);
 
 			if (dist <= enemy.m_attackRange) {
+				bool attackUnit = true;
 				unit.takeDamage(enemy.m_damage); 
 				enemy.m_attackTimer = enemy.m_attackCooldown; 
 				break; 
+			}
+		}
+
+		if (!attackUnit) {
+			for (auto& b : m_player.getBuildings()) {
+				sf::Vector2f dir = enemy.getPosition() - b->getPosition();
+				float dist = std::sqrt(dir.x * dir.x + dir.y * dir.y);
+
+				if (dist <= enemy.m_attackRange) {
+					b->takeDamage(enemy.m_damage * 5.f);
+					enemy.m_attackTimer = enemy.m_attackCooldown;
+					break;
+				}
 			}
 		}
 	}
@@ -377,13 +427,18 @@ void Game::handleCombat(float dt) {
 			}
 		}
 	}
+
+	
 }
 
 void Game::removeDeadEntities() {
 	for (size_t i = 0; i < m_enemies.size(); ) {
 		if (m_enemies[i].isDead()) {
+			std::ostringstream ss;
+			ss << toString(m_enemies[i].getType()) << " was slain!";
 			m_enemies[i] = std::move(m_enemies.back());
 			m_enemies.pop_back();
+			m_ui.addNotification(ss.str(), sf::Color::Red, 5.f);
 		}
 		else {
 			++i;
@@ -393,14 +448,27 @@ void Game::removeDeadEntities() {
 	auto& units = m_player.getUnits();
 	for (size_t i = 0; i < units.size(); ) {
 		if (units[i].isDead()) {
+			std::ostringstream ss;
+			ss << "Your " << toString(units[i].getType()) << " was slain!";
 			m_player.changeUnitCount(units[i].getType(), -1);
 			units[i] = std::move(units.back());
 			units.pop_back();
+			m_ui.addNotification(ss.str(), sf::Color::Red, 5.f);
+		}
+		else ++i;
+	}
 
+	auto& b = m_player.getBuildings();
+	for (size_t i = 0; i < b.size();) {
+		if (b[i]->isDestroyed()) {
+			std::ostringstream ss;
+			ss << "Your " << toString(b[i]->getType()) << " was destroyed!";
+			m_player.changeBuildingCount(b[i]->getType(), -1);
+			b[i] = std::move(b.back());
+			b.pop_back();
+			m_ui.addNotification(ss.str(), sf::Color::Red, 5.f);
 		}
-		else {
-			++i;
-		}
+		else ++i;
 	}
 }
 
@@ -435,12 +503,12 @@ void Game::handleAi() {
 	}
 
 	//AI enemy
-	basicAI(eAgg, m_player.getUnits(), 300.f, false);
-	basicAI(ePas, m_player.getUnits(), 200.f, false, true);
+	basicAI(eAgg, m_player.getUnits(), 300.f, false, m_map);
+	basicAI(ePas, m_player.getUnits(), 200.f, false, m_map, true);
 
 	//AI player
-	basicAI(uAgg, m_enemies, 350.f, true);   // skipIfMoving=true np. żeby nie przerywały marszu
-	basicAI(uPas, m_enemies, 250.f, true);   // Passive: mniejszy zasięg aggro albo wcale
+	basicAI(uAgg, m_enemies, 350.f, true, m_map);   // skipIfMoving=true np. żeby nie przerywały marszu
+	basicAI(uPas, m_enemies, 250.f, true, m_map);   // Passive: mniejszy zasięg aggro albo wcale
 }
 
 

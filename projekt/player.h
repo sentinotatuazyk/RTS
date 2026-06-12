@@ -7,6 +7,7 @@
 #include "API.h"
 #include "map.h"
 #include "enums.h"
+#include <SFML/System/Vector2.hpp>
 
 
 
@@ -17,7 +18,9 @@ public:
     ~Player();
 	void update(float deltaTime, const Map& map);
     void draw(sf::RenderWindow& window);
-    void handleEvent(const sf::Event& event, const sf::RenderWindow& window);
+    void handleEvent(const sf::Event& event, const sf::RenderWindow& window, const Map& map);
+
+    void clampPositionToMap(sf::Vector2f& pos, float radius, const Map& map);
 
 	int getResource(ResourceType type) const;
 	void addResource(ResourceType type, int amount);
@@ -39,6 +42,7 @@ public:
 
 	void removeBuilding(Building* toremove);
     void demolishSelectedBuildings();
+    std::vector < std::unique_ptr < Building >>& getBuildings();
     const std::vector < std::unique_ptr < Building >> &getBuildings() const;
 
     int getFoodIncome() const;
@@ -52,6 +56,9 @@ public:
     void setLastMouseWorldPos(sf::Vector2f pos);
     
 private:
+
+
+
     unsigned int m_gold;
     unsigned int m_rocks;
 	unsigned int m_wood;

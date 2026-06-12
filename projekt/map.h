@@ -2,6 +2,8 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <memory>
+#include <queue>
+#include <unordered_set>
 #include "PerlinNoise.h"
 #include "enums.h"
 
@@ -29,6 +31,9 @@ public:
     // Nowe: generuj chunk proceduralnie
     void generateChunk(int chunkX, int chunkY, int chunkSize);
 
+	std::vector<sf::Vector2f> findPath(sf::Vector2f start, sf::Vector2f end) const;
+    bool isWalkable(unsigned int x, unsigned int y) const;
+
 private:
     unsigned int m_width;
     unsigned int m_height;
@@ -50,6 +55,17 @@ private:
     void rebuildVertices();
     TileType heightToTile(float height) const;
     sf::Color tileToColor(TileType type) const;
+
+
+    struct ANode {
+        int x, y;
+        float g, f;
+        bool operator>(const ANode& other) const {
+            return f > other.f;
+		}
+    };
+	float heuristic(int x1, int y1, int x2, int y2) const;
+	std::vector<std::pair<int,int>> getNeighbors(int x, int y) const;
 
 
 };

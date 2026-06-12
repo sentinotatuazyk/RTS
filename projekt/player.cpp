@@ -263,6 +263,11 @@ void Player::demolishSelectedBuildings() {
     }
 }
 
+std::vector<std::unique_ptr<Building>>& Player::getBuildings()
+{
+    return m_buildings;
+}
+
 const std::vector <std::unique_ptr<Building>> &Player::getBuildings() const
 {
     return m_buildings;
@@ -306,7 +311,7 @@ void Player::update(float deltaTime, const Map& map) {
     }
 
     for (auto& unit : m_units) {
-        unit.update(deltaTime);
+        unit.update(deltaTime,map);
         if (unit.consumeBuildFinishedFlag()) {
 			addBuilding(unit.buildJobPos(), unit.buildJobType());
         }
@@ -314,6 +319,7 @@ void Player::update(float deltaTime, const Map& map) {
         sf::Vector2f pos = unit.getPosition();
 
         applyMapCollision(pos, unit.getRadius(), map);
+        clampPositionToMap(pos, unit.getRadius(), map);
         unit.setPosition(pos);
     }
 
@@ -459,7 +465,7 @@ void Player::draw(sf::RenderWindow& window) {
     }
 }
 
-void Player::handleEvent(const sf::Event& event, const sf::RenderWindow& window) {
+void Player::handleEvent(const sf::Event& event, const sf::RenderWindow& window, const Map& map) {
 	
     if (const auto* mousePressed = event.getIf<sf::Event::MouseButtonPressed>()) {
         if (mousePressed->button == sf::Mouse::Button::Left) {
@@ -473,7 +479,7 @@ void Player::handleEvent(const sf::Event& event, const sf::RenderWindow& window)
 
                 for (auto& unit : m_units) {
                     if (unit.isSelected() && unit.getType() == UnitType::Worker) {
-                        unit.startBuildJob(m_placeType, buildPos );
+                        unit.startBuildJob(m_placeType, buildPos, map );
                         break;
                     }
 				}
@@ -498,7 +504,7 @@ void Player::handleEvent(const sf::Event& event, const sf::RenderWindow& window)
 
             for (auto& unit : m_units) {
                 if (unit.isSelected()) {
-                    unit.moveTo(targetPos);
+                    unit.moveTo(targetPos, map);
                 }
             }
         }
@@ -540,6 +546,19 @@ void Player::handleEvent(const sf::Event& event, const sf::RenderWindow& window)
             m_selectionBox.setSize(currentMouse - m_startClick);
         }
     }
+}
+
+void Player::clampPositionToMap(sf::Vector2f& pos, float radius, const Map& map)
+{
+    sf::FloatRect bounds = map.getMapBounds();
+
+    // Lewa i górna krawędź
+    pos.x = std::max(bounds.position.x + radius, pos.x);
+    pos.y = std::max(bounds.position.y + radius, pos.y);
+
+    // Prawa i dolna krawędź
+    pos.x = std::min(bounds.position.x + bounds.size.x - radius, pos.x);
+    pos.y = std::min(bounds.position.y + bounds.size.y - radius, pos.y);
 }
 
 void Player::beginPlaceBuilding(BuildingType type) {

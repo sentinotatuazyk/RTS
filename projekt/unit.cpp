@@ -132,7 +132,7 @@ UnitState Unit::getState() const
     return m_state;
 }
 
-void Unit::update(float dt) {
+void Unit::update(float dt, const Map& map) {
     if (m_attackTimer > 0.f) {
         m_attackTimer -= dt;
     }
@@ -160,15 +160,21 @@ void Unit::update(float dt) {
     }
 
     if (m_isMoving) {
-        sf::Vector2f direction = m_targetPosition - m_position;
-        float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
-        if (distance < 5.f) {
-            m_isMoving = false;
-            m_position = m_targetPosition;
+        if (hasPath()) {
+            followPath(dt, m_speed, map);
         }
         else {
-            sf::Vector2f normalizedDir = direction / distance;
-            m_position += normalizedDir * m_speed * dt;
+            // Fallback: stary bezpośredni ruch
+            sf::Vector2f direction = m_targetPosition - m_position;
+            float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+            if (distance < 5.f) {
+                m_isMoving = false;
+                m_position = m_targetPosition;
+            }
+            else {
+                sf::Vector2f normalizedDir = direction / distance;
+                m_position += normalizedDir * m_speed * dt;
+            }
         }
     }
     m_shape.setPosition(m_position);
@@ -179,9 +185,23 @@ void Unit::draw(sf::RenderWindow& window) {
 	drawHealthBar(window, m_position, static_cast<float>(m_health) / m_maxHealth);
 }
 
-void Unit::moveTo(sf::Vector2f target) {
-    m_targetPosition = target;
-    m_isMoving = true;
+void Unit::moveTo(sf::Vector2f target, const Map& map) {
+    clearPath();
+
+    // Znajdź ścieżkę A*
+    m_path = map.findPath(m_position, target);
+
+    if (!m_path.empty()) {
+        m_pathIndex = 0;
+        m_isMoving = true;
+        m_targetPosition = m_path[0]; // pierwszy waypoint
+    }
+    else {
+        // Fallback: bezpośredni ruch jeśli A* nie znalazł ścieżki
+        // (np. cel jest bardzo blisko lub na tym samym tile)
+        m_targetPosition = target;
+        m_isMoving = true;
+    }
 }
 
 void Unit::takeDamage(int dmg) {
@@ -209,7 +229,7 @@ sf::Vector2f Unit::buildJobPos() const {
     return m_buildPos;
 }
 
-void Unit::startBuildJob(BuildingType type, sf::Vector2f pos) {
+void Unit::startBuildJob(BuildingType type, sf::Vector2f pos, const Map& map) {
     if (m_type != UnitType::Worker) return;
 
     m_buildJobActive = true;
@@ -219,7 +239,7 @@ void Unit::startBuildJob(BuildingType type, sf::Vector2f pos) {
     m_buildTimer = 0.f;
     m_buildFinished = false;
 
-    moveTo(pos);
+    moveTo(pos, map);
 }
 
 bool Unit::consumeBuildFinishedFlag() {
@@ -239,6 +259,59 @@ float Unit::getBuildProgress01() const
 sf::Vector2f Unit::getBuildSitePos() const
 {
     return m_buildPos;
+}
+
+void Unit::setPath(const std::vector<sf::Vector2f>& path)
+{
+    m_path = path;
+    m_pathIndex = 0;
+    if (!m_path.empty()) {
+        m_isMoving = true;
+        m_targetPosition = m_path[0];
+    }
+}
+
+void Unit::clearPath()
+{
+    m_path.clear();
+    m_pathIndex = 0;
+}
+
+bool Unit::hasPath() const
+{
+    return !m_path.empty() && m_pathIndex < m_path.size();
+}
+
+void Unit::followPath(float dt, float speed, const Map& map)
+{
+    if (!m_isMoving || m_path.empty()) return;
+
+    // Poruszaj się w stronę aktualnego waypointu
+    sf::Vector2f direction = m_targetPosition - m_position;
+    float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+
+    if (distance < PATH_REACHED_DIST) {
+        // Osiągnięto waypoint — przejdź do następnego
+        ++m_pathIndex;
+        if (m_pathIndex >= m_path.size()) {
+            // Koniec ścieżki
+            m_isMoving = false;
+            m_position = m_targetPosition;
+            clearPath();
+            return;
+        }
+        m_targetPosition = m_path[m_pathIndex];
+        // Przelicz direction dla nowego celu
+        direction = m_targetPosition - m_position;
+        distance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+    }
+
+    if (distance > 0.0001f) {
+        sf::Vector2f normalizedDir = direction / distance;
+        m_position += normalizedDir * speed * dt;
+    }
+
+    m_shape.setPosition(m_position);
 }
 
 

@@ -3,7 +3,7 @@
 #include "API.h"
 #include "enums.h"
 class Game;
-
+class Map;
 
 
 class EXPORT_API Enemy
@@ -20,20 +20,29 @@ public:
 	void spawn(sf::Vector2f position, EnemyType type);
 	sf::Vector2f getPosition() const;
 	void setPosition(sf::Vector2f position);
-	void moveTo(sf::Vector2f target);
+	void moveTo(sf::Vector2f target,const Map& map);
 	float getRadius() const;
 	void stop();
 	void setState(EnemyState state);
+	EnemyType getType();
 
 	EnemyState getState() const;
 
 	void takeDamage(int dmg);
 	bool isDead() const;
 	
+	void setPath(const std::vector<sf::Vector2f>& path);
+	void clearPath();
+	bool hasPath() const;
+	void followPath(float dt, float speed, const Map& map);
 private:
 	sf::Vector2f m_position;
 	sf::CircleShape m_shape;
 	sf::Texture m_texture;
+
+	std::vector<sf::Vector2f> m_path;
+	std::size_t m_pathIndex = 0;
+	static constexpr float PATH_REACHED_DIST = 5.f;
 
 	EnemyType m_type;
 	EnemyState m_state = EnemyState::Aggressive;

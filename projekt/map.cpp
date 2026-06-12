@@ -100,6 +100,37 @@ sf::Color Map::tileToColor(TileType type) const {
     }
 }
 
+float Map::heuristic(int x1, int y1, int x2, int y2) const
+{
+    int dx = std::abs(x2 - x1);
+    int dy = std::abs(y2 - y1);
+    return static_cast<float>(std::max(dx, dy) + (std::sqrt(2.0f) - 1.0f) * std::min(dx, dy));
+}
+
+std::vector<std::pair<int, int>> Map::getNeighbors(int x, int y) const
+{
+    std::vector<std::pair<int, int>> neighbors;
+    neighbors.reserve(8);
+
+    for (int dy = -1; dy <= 1; ++dy) {
+        for (int dx = -1; dx <= 1; ++dx) {
+            if (dx == 0 && dy == 0) continue;
+            int nx = x + dx;
+            int ny = y + dy;
+            if (!isWalkable(nx, ny)) continue;
+
+            // Sprawdź "przycinanie" rogów — nie chodź na ukos przez narożnik
+            if (dx != 0 && dy != 0) {
+                if (!isWalkable(x + dx, y) || !isWalkable(x, y + dy))
+                    continue; // blokowany róg
+            }
+
+            neighbors.push_back({ nx, ny });
+        }
+    }
+    return neighbors;
+}
+
 void Map::rebuildVertices() {
     m_vertices.clear();
 
@@ -234,4 +265,92 @@ void Map::generateChunk(int chunkX, int chunkY, int chunkSize) {
         }
     }
     m_verticesNeedUpdate = true;
+}
+
+std::vector<sf::Vector2f> Map::findPath(sf::Vector2f start, sf::Vector2f end) const
+{
+    // Konwertuj world → tile
+    int startX = static_cast<int>(std::floor(start.x / m_tileSize));
+    int startY = static_cast<int>(std::floor(start.y / m_tileSize));
+    int endX = static_cast<int>(std::floor(end.x / m_tileSize));
+    int endY = static_cast<int>(std::floor(end.y / m_tileSize));
+
+    // Granice
+    if (!isWalkable(startX, startY) || !isWalkable(endX, endY)) {
+        return {}; // start lub cel w wodzie/górach
+    }
+
+    // A*
+    std::priority_queue<ANode, std::vector<ANode>, std::greater<ANode>> open;
+    std::unordered_set<int> closed; // zakodowane: y * m_width + x
+
+    std::unordered_map<int, int> cameFrom; // zakodowane: current → parent
+    std::unordered_map<int, float> gScore;
+
+    auto encode = [this](int x, int y) { return y * static_cast<int>(m_width) + x; };
+
+    open.push({ startX, startY, 0.f, heuristic(startX, startY, endX, endY) });
+    gScore[encode(startX, startY)] = 0.f;
+
+    while (!open.empty()) {
+        ANode current = open.top();
+        open.pop();
+
+        int currentKey = encode(current.x, current.y);
+
+        if (closed.count(currentKey)) continue;
+        closed.insert(currentKey);
+
+        // Cel osiągnięty
+        if (current.x == endX && current.y == endY) {
+            // Rekonstrukcja ścieżki
+            std::vector <sf::Vector2f> path;
+            int key = currentKey;
+
+            while (key != encode(startX, startY)) {
+                int x = key % static_cast<int>(m_width);
+                int y = key / static_cast<int>(m_width);
+                path.push_back({
+                    x * m_tileSize + m_tileSize / 2.f,
+                    y * m_tileSize + m_tileSize / 2.f
+                    });
+                auto it = cameFrom.find(key);
+                if (it == cameFrom.end()) break; // bezpieczeństwo
+                key = it->second;
+            }
+
+            // Dodaj start (opcjonalnie)
+            // path.push_back(startWorld);
+
+            std::reverse(path.begin(), path.end());
+            return path;
+        }
+
+        // Sąsiedzi
+        for (auto [nx, ny] : getNeighbors(current.x, current.y)) {
+            int neighborKey = encode(nx, ny);
+            if (closed.count(neighborKey)) continue;
+
+            // Koszt ruchu: 1.0 dla prosto, 1.414 dla ukos
+            float moveCost = ((nx != current.x) && (ny != current.y)) ? 1.414f : 1.0f;
+            float tentativeG = current.g + moveCost;
+
+            auto it = gScore.find(neighborKey);
+            if (it == gScore.end() || tentativeG < it->second) {
+                cameFrom[neighborKey] = currentKey;
+                gScore[neighborKey] = tentativeG;
+                float f = tentativeG + heuristic(nx, ny, endX, endY);
+                open.push({ nx, ny, tentativeG, f });
+            }
+        }
+    }
+
+    return {}; // brak ścieżki
+}
+
+bool Map::isWalkable(unsigned int x, unsigned int y) const
+{
+    if (x < 0 || x >= static_cast<int>(m_width) || y < 0 || y >= static_cast<int>(m_height)) return false;
+	TileType type = getTile(x, y);
+	return type == TileType::Grass || type == TileType::Sand;
 }
