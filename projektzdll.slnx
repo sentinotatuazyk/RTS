@@ -1,0 +1,10 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="DLL/DLL.vcxproj" Id="397547d7-3ef8-49ad-a2ea-f28b56111ad8" />
+  <Project Path="projektzdll/projektzdll.vcxproj" Id="902cb47d-5477-46ad-af0b-7abd1dba4608">
+    <BuildDependency Project="DLL/DLL.vcxproj" />
+  </Project>
+</Solution>

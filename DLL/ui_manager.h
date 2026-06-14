@@ -1,0 +1,196 @@
+#pragma once
+#include <SFML/Graphics.hpp>
+#include <functional>
+#include <vector>
+#include <string>
+#include <cstddef>
+#include <utility>
+#include <deque>
+
+class Player;
+class Map;
+
+struct UIToolTip {
+    std::string text;
+    sf::Vector2f position;
+    float alpha = 0.f;
+    float targetAlpha = 230.f;
+};
+
+struct UINotification {
+    std::string text;
+    sf::Color color;
+    float lifetime;
+    float timeLeft;
+    float slideIn;
+};
+
+struct UIButton {
+    sf::RectangleShape shape;
+    sf::Text label;
+    std::function<void()> onClick;
+    std::string tooltip;
+
+    float flashTimeLeft = 0.f;
+    float flashDuration = 0.12f;
+
+	sf::Color baseColor = sf::Color(30, 30, 30, 230);
+	sf::Color flashColor = sf::Color(80, 80, 80, 255);
+
+    UIButton(const sf::Font& font) : label(font) {}
+
+    void setText(const std::string& text, unsigned int charSize = 18) {
+        label.setString(text);
+        label.setCharacterSize(charSize);
+    }
+
+    void triggerFlash() {
+        flashTimeLeft = flashDuration;
+		shape.setFillColor(flashColor);
+    }
+
+    void updtate(float dt){
+        if (flashTimeLeft <= 0.f) return;
+        flashTimeLeft -= dt;
+        if (flashTimeLeft <= 0.f) {
+			flashTimeLeft = 0.f;
+			shape.setFillColor(baseColor);
+        }
+
+    }
+
+    bool hitTest(sf::Vector2f mousePx) const {
+        return shape.getGlobalBounds().contains(mousePx);
+    }
+
+    void draw(sf::RenderWindow& w) const {
+        w.draw(shape);
+        w.draw(label);
+    }
+};
+
+struct UIPanel {
+    sf::FloatRect bounds{ {0.f, 0.f}, {0.f, 0.f} };
+    sf::Color bg = sf::Color(10, 10, 10, 210);
+    sf::Color outline = sf::Color(80, 80, 80, 255);
+    float outlineThickness = 1.f;
+
+    std::vector<UIButton> buttons;
+
+    void clear() { buttons.clear(); }
+
+    void draw(sf::RenderWindow& window) const {
+        sf::RectangleShape panel;
+        panel.setPosition(bounds.position);
+        panel.setSize(bounds.size);
+        panel.setFillColor(bg);
+        panel.setOutlineThickness(outlineThickness);
+        panel.setOutlineColor(outline);
+        window.draw(panel);
+
+        for (const auto& b : buttons) b.draw(window);
+    }
+
+    bool handleClick(sf::Vector2f mousePx) {
+        if (!bounds.contains(mousePx)) return false;
+
+        for (auto& b : buttons) {
+            if (b.hitTest(mousePx)) {
+                b.triggerFlash();
+                if (b.onClick) b.onClick();
+                return true;
+            }
+        }
+        return true; // klik w panel tła też “zjada”
+    }
+};
+
+class UIManager {
+public:
+    using Action = std::pair<std::string, std::function<void()>>;
+
+    bool init(const std::string& fontPath);
+    void forceRebuild(const sf::RenderWindow& window, Player& player);
+
+    void setMap(const Map* map);
+    void draw(sf::RenderWindow& window, const Player& player, const sf::View& view, float prepTimer, float waveTimer, int currWave, bool isPrepPhase);
+	void update(float dt);
+
+	// true = UI zjadło event (np. klik w panel/przycisk)
+	bool handleEvent(const sf::Event& event, sf::RenderWindow& window, Player& player);
+
+	void drawPausedOverlay(sf::RenderWindow& window);
+	void drawGameOverScreen(sf::RenderWindow& window, const std::string& reason);
+
+    void addNotification(const std::string& text, sf::Color color = sf::Color::White, float duration = 3.f);
+    void addNotification(const std::string& text, float duration);
+
+    void setTooltip(const std::string& text, sf::Vector2f mousePos);
+    void clearTooltip();
+
+    
+private:
+	void layoutPanels(const sf::RenderWindow& window);
+	void rebuildAll(const sf::RenderWindow& window, Player& player);
+
+	void rebuildInfoPanel(const sf::RenderWindow& window, Player& player);
+    void rebuildActionsPanel(const sf::RenderWindow& window, Player& player);
+    void rebuildMapPanel(const sf::RenderWindow& window, Player& player);
+	void rebuildResourcesPanel(const sf::RenderWindow& window, Player& player);
+
+    void drawInfoPanelOverlay(sf::RenderWindow& window, const Player& player);
+    void drawHealthBarUI(sf::RenderWindow& window, sf::Vector2f pos, sf::Vector2f size, float hp01);
+	void drawRecourcesBarUI(sf::RenderWindow& window, const Player& player);
+	void drawBuildTypesUI(sf::RenderWindow& window, Player& player);
+	void drawTimerUI(sf::RenderWindow& window,float prepTimer, float waveTimer,int currWave, bool isPrepPhase );
+
+
+    void drawMiniMap(sf::RenderWindow& window, const Player& player, const sf::View& view);
+
+    void drawNotification(sf::RenderWindow& window);
+
+    void drawTooltip(sf::RenderWindow& window);
+
+    std::size_t computeSelectionHashUnit(const Player& player) const;
+    std::size_t computeSelectionHashBuilding(const Player& player) const;
+
+    // Jeden wspólny “layout engine” dla przycisków (super przy rozbudowie UI)
+    std::vector<UIButton>& fillPanelGrid(
+        UIPanel& panel,
+        const std::vector<Action>& actions,
+        int columns = 2,
+        float padding = 12.f,
+        float rowHeight = 42.f
+    );
+
+     
+private:
+    sf::Font m_font;
+    bool m_ready = false;
+
+    float m_panelHeight = 170.f;
+
+    UIPanel m_infoPanel;
+	UIPanel m_resourcesPanel;
+    UIPanel m_actionsPanel;
+	UIPanel m_buildPanel;
+    UIPanel m_mapPanel;
+
+	bool m_showBuildPanel = false;
+
+	const Map* m_mapRef = nullptr; // do minimapy
+
+    std::size_t m_lastSelectionHashUnit = 0;
+	std::size_t m_lastSelectionHashBuilding = 0;
+
+    std::deque<UINotification> m_notifications;
+    static constexpr float NOTIFICATION_MAX_WIDTH = 300.f;
+    static constexpr float NOTIFICATION_HEIGHT = 32.f;
+    static constexpr float NOTIFICATION_MARGIN = 10.f;
+    static constexpr float NOTIFICATION_SPACING = 6.f;
+
+    std::optional<UIToolTip> m_tooltip;
+    static constexpr float TOOLTIP_FADE_SPEED = 800.f;
+
+    
+};
