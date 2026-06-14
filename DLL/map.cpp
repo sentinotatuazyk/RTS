@@ -15,7 +15,6 @@ Map::Map(unsigned int width, unsigned int height, float tileSize, unsigned int s
 
 
 void Map::generateTerrain() {
-    // Najpierw wygeneruj surowe wysokości
     std::vector<float> rawHeights(m_width * m_height);
 
     for (unsigned int y = 0; y < m_height; ++y) {
@@ -35,24 +34,19 @@ void Map::generateTerrain() {
         }
     }
 
-    // Pierwszy przebieg: woda, trawa, góry, śnieg (bez piasku!)
     for (unsigned int y = 0; y < m_height; ++y) {
         for (unsigned int x = 0; x < m_width; ++x) {
             float h = rawHeights[y * m_width + x];
             m_heightmap[y * m_width + x] = h;
 
-            // Tymczasowo: woda lub ląd (bez piasku jeszcze)
 			m_grid[y * m_width + x] = heightToTile(h);
         }
     }
 
-    // Drugi przebieg: piasek TYLKO obok wody
     for (unsigned int y = 0; y < m_height; ++y) {
         for (unsigned int x = 0; x < m_width; ++x) {
-            // Jeśli to nie jest trawa — pomijamy (piasek tylko z trawy)
             if (m_grid[y * m_width + x] != TileType::Grass) continue;
 
-            // Sprawdź 8 sąsiadów
             bool nearWater = false;
             for (int dy = -1; dy <= 1 && !nearWater; ++dy) {
                 for (int dx = -1; dx <= 1 && !nearWater; ++dx) {
@@ -61,7 +55,6 @@ void Map::generateTerrain() {
                     int nx = static_cast<int>(x) + dx;
                     int ny = static_cast<int>(y) + dy;
 
-                    // Sprawdź granice mapy
                     if (nx < 0 || nx >= static_cast<int>(m_width) ||
                         ny < 0 || ny >= static_cast<int>(m_height)) continue;
 
@@ -71,7 +64,6 @@ void Map::generateTerrain() {
                 }
             }
 
-            // Jeśli obok jest woda i wysokość jest niska — piasek
             if (nearWater && rawHeights[y * m_width + x] < 0.42f) {
                 m_grid[y * m_width + x] = TileType::Sand;
             }
@@ -119,10 +111,9 @@ std::vector<std::pair<int, int>> Map::getNeighbors(int x, int y) const
             int ny = y + dy;
             if (!isWalkable(nx, ny)) continue;
 
-            // Sprawdź "przycinanie" rogów — nie chodź na ukos przez narożnik
             if (dx != 0 && dy != 0) {
                 if (!isWalkable(x + dx, y) || !isWalkable(x, y + dy))
-                    continue; // blokowany róg
+                    continue; 
             }
 
             neighbors.push_back({ nx, ny });
@@ -142,9 +133,9 @@ void Map::rebuildVertices() {
             TileType type = m_grid[y * m_width + x];
             sf::Color color = tileToColor(type);
 
-            // Dodaj cieniowanie bazujące na wysokości
+
             float height = m_heightmap[y * m_width + x];
-            float shade = 0.7f + height * 0.3f;  // Jaśniejsze na górze
+            float shade = 0.7f + height * 0.3f;  
             color.r = static_cast <std::uint8_t> (color.r * shade);
             color.g = static_cast <std::uint8_t> (color.g * shade);
             color.b = static_cast <std::uint8_t> (color.b * shade);
@@ -175,7 +166,6 @@ void Map::draw(sf::RenderWindow& window) {
 }
 
 void Map::drawVisible(sf::RenderWindow& window, const sf::View& view) const {
-    // Oblicz zakres widocznych tile'i
     sf::FloatRect viewBounds(
         { view.getCenter().x - view.getSize().x / 2.0f,
           view.getCenter().y - view.getSize().y / 2.0f },
@@ -203,7 +193,6 @@ void Map::drawVisible(sf::RenderWindow& window, const sf::View& view) const {
             int tileIndex = y * tilesPerRow + x;
             int vertexIndex = tileIndex * verticesPerTile;
 
-            // Rysuj 6 wierzchołków danego tile'a
             for (int i = 0; i < verticesPerTile; ++i) {
                 visibleVertices.push_back(m_vertices[vertexIndex + i]);
             }
@@ -245,7 +234,6 @@ void Map::regenerate(unsigned int seed) {
 }
 
 void Map::generateChunk(int chunkX, int chunkY, int chunkSize) {
-    // Do użycia z chunk managerem - generuje fragment mapy
     for (int y = 0; y < chunkSize; ++y) {
         for (int x = 0; x < chunkSize; ++x) {
             int worldX = chunkX * chunkSize + x;
@@ -269,7 +257,6 @@ void Map::generateChunk(int chunkX, int chunkY, int chunkSize) {
 
 std::vector<sf::Vector2f> Map::findPath(sf::Vector2f start, sf::Vector2f end) const
 {
-    // Konwertuj world → tile
     int startX = static_cast<int>(std::floor(start.x / m_tileSize));
     int startY = static_cast<int>(std::floor(start.y / m_tileSize));
     int endX = static_cast<int>(std::floor(end.x / m_tileSize));
@@ -277,14 +264,14 @@ std::vector<sf::Vector2f> Map::findPath(sf::Vector2f start, sf::Vector2f end) co
 
     // Granice
     if (!isWalkable(startX, startY) || !isWalkable(endX, endY)) {
-        return {}; // start lub cel w wodzie/górach
+        return {}; 
     }
 
     // A*
     std::priority_queue<ANode, std::vector<ANode>, std::greater<ANode>> open;
-    std::unordered_set<int> closed; // zakodowane: y * m_width + x
+    std::unordered_set<int> closed; 
 
-    std::unordered_map<int, int> cameFrom; // zakodowane: current → parent
+    std::unordered_map<int, int> cameFrom; 
     std::unordered_map<int, float> gScore;
 
     auto encode = [this](int x, int y) { return y * static_cast<int>(m_width) + x; };
@@ -301,9 +288,7 @@ std::vector<sf::Vector2f> Map::findPath(sf::Vector2f start, sf::Vector2f end) co
         if (closed.count(currentKey)) continue;
         closed.insert(currentKey);
 
-        // Cel osiągnięty
         if (current.x == endX && current.y == endY) {
-            // Rekonstrukcja ścieżki
             std::vector <sf::Vector2f> path;
             int key = currentKey;
 
@@ -315,23 +300,19 @@ std::vector<sf::Vector2f> Map::findPath(sf::Vector2f start, sf::Vector2f end) co
                     y * m_tileSize + m_tileSize / 2.f
                     });
                 auto it = cameFrom.find(key);
-                if (it == cameFrom.end()) break; // bezpieczeństwo
+                if (it == cameFrom.end()) break;
                 key = it->second;
             }
 
-            // Dodaj start (opcjonalnie)
-            // path.push_back(startWorld);
 
             std::reverse(path.begin(), path.end());
             return path;
         }
 
-        // Sąsiedzi
         for (auto [nx, ny] : getNeighbors(current.x, current.y)) {
             int neighborKey = encode(nx, ny);
             if (closed.count(neighborKey)) continue;
 
-            // Koszt ruchu: 1.0 dla prosto, 1.414 dla ukos
             float moveCost = ((nx != current.x) && (ny != current.y)) ? 1.414f : 1.0f;
             float tentativeG = current.g + moveCost;
 
@@ -345,7 +326,7 @@ std::vector<sf::Vector2f> Map::findPath(sf::Vector2f start, sf::Vector2f end) co
         }
     }
 
-    return {}; // brak ścieżki
+    return {}; 
 }
 
 bool Map::isWalkable(unsigned int x, unsigned int y) const

@@ -101,7 +101,7 @@ struct UIPanel {
                 return true;
             }
         }
-        return true; // klik w panel tła też “zjada”
+        return true; 
     }
 };
 
@@ -116,7 +116,6 @@ public:
     void draw(sf::RenderWindow& window, const Player& player, const sf::View& view, float prepTimer, float waveTimer, int currWave, bool isPrepPhase);
 	void update(float dt);
 
-	// true = UI zjadło event (np. klik w panel/przycisk)
 	bool handleEvent(const sf::Event& event, sf::RenderWindow& window, Player& player);
 
 	void drawPausedOverlay(sf::RenderWindow& window);
@@ -154,7 +153,6 @@ private:
     std::size_t computeSelectionHashUnit(const Player& player) const;
     std::size_t computeSelectionHashBuilding(const Player& player) const;
 
-    // Jeden wspólny “layout engine” dla przycisków (super przy rozbudowie UI)
     std::vector<UIButton>& fillPanelGrid(
         UIPanel& panel,
         const std::vector<Action>& actions,

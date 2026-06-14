@@ -11,7 +11,7 @@ Menu::Menu(sf::RenderWindow& window) : m_window(window), m_title(m_font), m_star
 	const float topY = static_cast<float>(winSize.y) * 0.2f;
 	const float spacing = 70.f;
 
-    m_title.setString("PlaceHolder");
+    m_title.setString("Gra RTS / Konrad Toborek");
     m_title.setCharacterSize(50);
 
     m_start.setString("Start");

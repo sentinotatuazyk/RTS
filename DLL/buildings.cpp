@@ -305,7 +305,7 @@ void Fence::draw(sf::RenderWindow& window)
 void Fence::updateSegment(const std::vector<std::unique_ptr<Building>>& allBuildings)
 {
     sf::Vector2f pos = getPosition();
-    float size = 32.f; // odległość między środkami sąsiednich płotów
+    float size = 32.f; 
 
     bool left = hasFenceNeighbor({ pos.x - size, pos.y }, allBuildings);
     bool right = hasFenceNeighbor({ pos.x + size, pos.y }, allBuildings);
@@ -350,40 +350,40 @@ void Fence::updateSegment(const std::vector<std::unique_ptr<Building>>& allBuild
 
     int spriteIndex = 0;
 
-    if ((left || right) && !up && !down) {        // ✅ NAWIASY
-        m_state = FenceStates::Front;             // ─
+    if ((left || right) && !up && !down) {       
+        m_state = FenceStates::Front;             
         spriteIndex = 0;
     }
     else if (up && left && !right && !down) {
-        m_state = FenceStates::LeftBendDown;      // ┐ ✅ POPRAWIONE
+        m_state = FenceStates::LeftBendDown;      
         spriteIndex = 3;
     }
     else if (up && right && !left && !down) {
-        m_state = FenceStates::RightBendDown;     // ┌
+        m_state = FenceStates::RightBendDown;     
         spriteIndex = 5;
     }
     else if (down && left && !right && !up) {
-        m_state = FenceStates::LeftBendUp;        // ┘ ✅ POPRAWIONE
+        m_state = FenceStates::LeftBendUp;        
         spriteIndex = 1;
     }
     else if (up && down && left && !right) {
-        m_state = FenceStates::LeftSide;          // │ (sąsiad z lewej)
+        m_state = FenceStates::LeftSide;         
         spriteIndex = 4;
     }
     else if (down && right && !left && !up) {
-        m_state = FenceStates::RightBendUp;       // └
+        m_state = FenceStates::RightBendUp;      
         spriteIndex = 2;
     }
     else if (((up && upleft) || (down && downleft)) && !left && !right || (isUpOnRight || isDownOnRight)) {
-        m_state = FenceStates::RightSide;         // │ (sąsiad z prawej)
+        m_state = FenceStates::RightSide;        
         spriteIndex = 6;
     }
     else if ((up || down) && !left && !right) {
-        m_state = FenceStates::LeftSide;            // │ domyślnie
+        m_state = FenceStates::LeftSide;            
         spriteIndex = 4;
     }
     else {
-        m_state = FenceStates::Front;               // ─ domyślnie
+        m_state = FenceStates::Front;             
         spriteIndex = 0;
     }
 
@@ -409,10 +409,9 @@ FenceStates Fence::getFenceState() const
 bool Fence::hasFenceNeighbor(const sf::Vector2f& pos, const std::vector<std::unique_ptr<Building>>& buildings)
 {
     for (const auto& b : buildings) {
-        if (b.get() == this) continue; // pomiń samego siebie
+        if (b.get() == this) continue;
         if (b->getType() != BuildingType::Fence) continue;
 
-        // Sprawdź czy pozycja się pokrywa (z małą tolerancją)
         float dx = std::abs(b->getPosition().x - pos.x);
         float dy = std::abs(b->getPosition().y - pos.y);
         if (dx < 1.f && dy < 1.f) return true;

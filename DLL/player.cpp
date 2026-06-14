@@ -4,7 +4,6 @@
 #include "utils.h"
 #include <iostream>
 
-// W konstruktorze ustawiamy już tylko złoto na 0 (lub inną wartość startową)
 Player::Player() : m_gold(150),m_wood(500), m_rocks(300), m_food(0) {
     m_selectionBox.setFillColor(sf::Color(0, 255, 0, 50));
     m_selectionBox.setOutlineColor(sf::Color::Green);
@@ -167,7 +166,7 @@ void Player::addBuilding(sf::Vector2f position, BuildingType type)
             m_buildingCount++;
             m_buildingTable[type]++;
             m_buildings.push_back(std::make_unique<Fence>(position));
-            updateAllFenceSegments(); // przelicz segmenty wszystkich płotów
+            updateAllFenceSegments(); 
             break;
         default:
 			break;
@@ -218,7 +217,7 @@ void Player::updateAllFenceSegments()
 void Player::removeBuilding(Building* buildingToRemove) {
     for (auto it = m_buildings.begin(); it != m_buildings.end(); ++it) {
         if (it->get() == buildingToRemove) {
-            // Zmniejsz liczniki PRZED usunięciem
+
             BuildingType type = (*it)->getType();
             changeBuildingCount(type, -1);
 
@@ -227,26 +226,21 @@ void Player::removeBuilding(Building* buildingToRemove) {
                 m_TownHallBuilt = false;
             }
 
-            // Usuń budynek
             m_buildings.erase(it);
 
             if (type == BuildingType::Fence) {
                 updateAllFenceSegments();
             }
-            return; // usunęliśmy jeden, koniec
+            return;
         }
     }
 }
 
 void Player::demolishSelectedBuildings() {
-    // Usuń wszystkie zaznaczone budynki
     for (auto it = m_buildings.begin(); it != m_buildings.end(); ) {
         if ((*it)->isSelected()) {
             BuildingType type = (*it)->getType();
 
-            // Zwrot surowców (np. 50% kosztu)
-            // auto cost = getBuildingCost(type);
-            // addResource(ResourceType::Gold, cost.gold / 2);
 
             changeBuildingCount(type, -1);
 
@@ -255,7 +249,7 @@ void Player::demolishSelectedBuildings() {
                 m_TownHallBuilt = false;
             }
 
-            it = m_buildings.erase(it); // erase zwraca iterator na następny
+            it = m_buildings.erase(it); 
         }
         else {
             ++it;
@@ -356,7 +350,6 @@ void Player::update(float deltaTime, const Map& map) {
 
         bool ok = true;
 
-        // sprawdzamy kafelki pod budynkiem
         const int startX = static_cast<int>(std::floor(m_ghostPos.x / tileSize));
         const int startY = static_cast<int>(std::floor(m_ghostPos.y / tileSize));
         const int endX = static_cast<int>(std::floor((m_ghostPos.x + m_ghostSize.x - 1.f) / tileSize));
@@ -401,7 +394,6 @@ void Player::update(float deltaTime, const Map& map) {
         }
         if (ok) {
             for (const auto& b : m_buildings) {
-                // musimy mieć bounds budynku -> dodaj getBounds() w Building (sekcja 6)
                 if (ghostRect.findIntersection(b->getBounds())) {
                     ok = false;
                     break;
@@ -409,7 +401,6 @@ void Player::update(float deltaTime, const Map& map) {
             }
         }
 
-        // (opcjonalnie) kolizja z jednostkami (żeby nie stawiać na nich)
         if (ok) {
             for (const auto& u : m_units) {
                 if (ghostRect.findIntersection(u.getBounds())) {
@@ -442,7 +433,7 @@ void Player::draw(sf::RenderWindow& window) {
             float p = unit.getBuildProgress01();
 
             sf::Vector2f pos = unit.getBuildSitePos();
-            sf::Vector2f size = { 80.f, 10.f }; // możesz dopasować do Building::defaultSize
+            sf::Vector2f size = { 80.f, 10.f };
 
             sf::RectangleShape back(size);
             back.setPosition({ pos.x, pos.y - 14.f });

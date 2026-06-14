@@ -1,13 +1,9 @@
 #include "unit.h"
 #include "utils.h"
-// Inicjalizujemy podstawowe parametry
 Unit::Unit() : m_speed(150.f), m_health(100), m_isMoving(false), m_isDead(false) {
-    // Ustawiamy wygląd: czerwone kółko o promieniu 15 pikseli
     m_shape.setRadius(15.f);
     m_shape.setFillColor(sf::Color::Red);
 
-    // Ustawiamy środek ciężkości (Origin) na sam środek kółka,
-    // to bardzo ułatwi potem pozycjonowanie i obracanie!
     m_shape.setOrigin({ 15.f, 15.f });
 }
 
@@ -164,7 +160,6 @@ void Unit::update(float dt, const Map& map) {
             followPath(dt, m_speed, map);
         }
         else {
-            // Fallback: stary bezpośredni ruch
             sf::Vector2f direction = m_targetPosition - m_position;
             float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
             if (distance < 5.f) {
@@ -189,17 +184,16 @@ void Unit::moveTo(sf::Vector2f target, const Map& map) {
     cancelBuildJob();
     clearPath();
    
-    // Znajdź ścieżkę A*
+
     m_path = map.findPath(m_position, target);
 
     if (!m_path.empty()) {
         m_pathIndex = 0;
         m_isMoving = true;
-        m_targetPosition = m_path[0]; // pierwszy waypoint
+        m_targetPosition = m_path[0]; 
     }
     else {
-        // Fallback: bezpośredni ruch jeśli A* nie znalazł ścieżki
-        // (np. cel jest bardzo blisko lub na tym samym tile)
+
         m_targetPosition = target;
         m_isMoving = true;
     }
@@ -215,15 +209,15 @@ bool Unit::isDead() const {
 }
 
 bool Unit::hasBuildJob() const {
-    return m_buildJobActive; // Placeholder logic
+    return m_buildJobActive; 
 }
 
 bool Unit::isBuildingNow() const {
-    return m_buildingNow; // Placeholder logic
+    return m_buildingNow; 
 }
 
 BuildingType Unit::buildJobType() const {
-    return m_buildType; // Placeholder logic
+    return m_buildType;
 }
 
 sf::Vector2f Unit::buildJobPos() const {
@@ -237,8 +231,6 @@ void Unit::startBuildJob(BuildingType type, sf::Vector2f pos, const Map& map) {
 	sf::Vector2f centerPos = { pos.x + bSize.x / 2.f, pos.y + bSize.y / 2.f };
 
     moveTo(centerPos, map);
-
-    //if (m_position.x >= centerPos.x + bSize.x / 2 && m_position.x <= centerPos.x - bSize.x / 2 && m_position.y <= centerPos.y + bSize.y / 2 && m_position.y >= centerPos.y - bSize.y / 2) stop();
 
     m_buildJobActive = true;
     m_buildingNow = false;
@@ -300,22 +292,18 @@ void Unit::followPath(float dt, float speed, const Map& map)
 {
     if (!m_isMoving || m_path.empty()) return;
 
-    // Poruszaj się w stronę aktualnego waypointu
     sf::Vector2f direction = m_targetPosition - m_position;
     float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
 
     if (distance < PATH_REACHED_DIST) {
-        // Osiągnięto waypoint — przejdź do następnego
         ++m_pathIndex;
         if (m_pathIndex >= m_path.size()) {
-            // Koniec ścieżki
             m_isMoving = false;
             m_position = m_targetPosition;
             clearPath();
             return;
         }
         m_targetPosition = m_path[m_pathIndex];
-        // Przelicz direction dla nowego celu
         direction = m_targetPosition - m_position;
         distance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
     }

@@ -26,9 +26,7 @@ public:
 
     sf::FloatRect getMapBounds() const;
 
-    // Nowe: regeneruj mapę z nowym seedem
     void regenerate(unsigned int seed);
-    // Nowe: generuj chunk proceduralnie
     void generateChunk(int chunkX, int chunkY, int chunkSize);
 
 	std::vector<sf::Vector2f> findPath(sf::Vector2f start, sf::Vector2f end) const;
@@ -48,7 +46,6 @@ private:
     int m_octaves = 8;
     float m_persistence = 0.5f;
 
-    // Wysokości dla każdego tile'a (opcjonalnie - do cieniowania)
     std::vector<float> m_heightmap;
 
     void generateTerrain();

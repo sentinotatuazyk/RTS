@@ -69,12 +69,12 @@ private:
 
 	void applySettingsToWindows();
 
-    void drawFpsCounter();           // rysuje FPS w rogu ekranu
-    sf::Text m_fpsText;              // tekst FPS
-    sf::Font m_fpsFont;              // czcionka (może być ta sama co UI)
-    float m_fpsUpdateTimer = 0.f;    // timer do odświeżania co 0.25s
-    int m_frameCount = 0;            // licznik klatek
-    float m_currentFps = 0.f;        // aktualna wartość FPS
+    void drawFpsCounter();           
+    sf::Text m_fpsText;              
+    sf::Font m_fpsFont;              
+    float m_fpsUpdateTimer = 0.f;    
+    int m_frameCount = 0;            
+    float m_currentFps = 0.f;        
 
 
 

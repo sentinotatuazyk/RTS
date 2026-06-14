@@ -7,14 +7,11 @@
 #include "enums.h"
 
 struct AppSettings {
-    // Presety rozdzielczości (tylko windowed)
     int resolutionIndex = 0;
 
-    // True fullscreen: używamy sf::Style::Fullscreen + desktop mode
     bool fullscreen = false;
 	bool showFps = false;
 
-    // FPS limit (0 = brak limitu, ale ja polecam minimum 30)
     unsigned int fpsLimit = 60;
 
     // Lista presetów
@@ -27,13 +24,11 @@ struct AppSettings {
 };
 
 
-
-// Prosty ekran ustawień (rysowanie + kliknięcia)
 class SettingsScreen {
 public:
     SettingsScreen();
     bool init(const std::string& fontPath);
-    void open(const AppSettings& current);        // kopiujemy ustawienia do edycji
+    void open(const AppSettings& current);        
     const AppSettings& edited() const;
 
     void draw(sf::RenderWindow& window);
@@ -42,7 +37,6 @@ public:
 private:
     void rebuildLayout(const sf::RenderWindow& window);
 
-    // UI helpers
     bool hit(const sf::RectangleShape& r, sf::Vector2f p) const;
     void centerTextInRect(sf::Text& t, const sf::RectangleShape& r);
 
@@ -52,7 +46,6 @@ private:
 
     AppSettings m_edit;
 
-    // UI: prosty panel
     sf::RectangleShape m_panel;
 
     // Labels
@@ -60,7 +53,7 @@ private:
     sf::Text m_resLabel;
     sf::Text m_fpsLabel;
 
-    // Resolution "selector"
+    // Resolution selector
     sf::RectangleShape m_resBox;
     sf::Text m_resValue;
     sf::RectangleShape m_resPrev;
@@ -78,7 +71,7 @@ private:
 	sf::RectangleShape m_fpsShowerCheck;
 	sf::Text m_fpsShowerText;
 
-    // FPS "selector"
+    // FPS selector
     sf::RectangleShape m_fpsBox;
     sf::Text m_fpsValue;
     sf::RectangleShape m_fpsMinus;

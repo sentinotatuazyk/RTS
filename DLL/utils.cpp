@@ -64,7 +64,6 @@ bool applyBuildingCollision(sf::Vector2f& pos, float radius,
 	for (const auto& b : buildings) {
 		sf::FloatRect bounds = b->getBounds();
 
-		// Najbliższy punkt na prostokącie budynku do środka jednostki
 		float closestX = std::max(bounds.position.x,
 			std::min(pos.x, bounds.position.x + bounds.size.x));
 		float closestY = std::max(bounds.position.y,

@@ -132,7 +132,7 @@ bool SettingsScreen::init(const std::string& fontPath) {
     m_fsBox.setFillColor(sf::Color(20, 20, 20, 230));
     m_fsBox.setOutlineThickness(1.f);
     m_fsBox.setOutlineColor(sf::Color(90, 90, 90));
-    m_fsCheck.setFillColor(sf::Color(0, 200, 0, 255)); // rysujemy tylko gdy zaznaczone
+    m_fsCheck.setFillColor(sf::Color(0, 200, 0, 255));
     m_fsText = sf::Text(m_font, "Fullscreen (exclusive)", 20);
     m_fsText.setFillColor(sf::Color::White);
 
@@ -140,7 +140,7 @@ bool SettingsScreen::init(const std::string& fontPath) {
 	m_fpsShowerBox.setFillColor(sf::Color(20, 20, 20, 230));
 	m_fpsShowerBox.setOutlineThickness(1.f);
 	m_fpsShowerBox.setOutlineColor(sf::Color(90, 90, 90));
-	m_fpsShowerCheck.setFillColor(sf::Color(0, 200, 0, 255)); // rysujemy tylko gdy zaznaczone
+	m_fpsShowerCheck.setFillColor(sf::Color(0, 200, 0, 255)); 
 	m_fpsShowerText = sf::Text(m_font, "Show FPS in corner", 20);
 	m_fpsShowerText.setFillColor(sf::Color::White);
 
@@ -174,7 +174,6 @@ bool SettingsScreen::hit(const sf::RectangleShape& r, sf::Vector2f p) const {
 }
 
 void SettingsScreen::centerTextInRect(sf::Text& t, const sf::RectangleShape& r) {
-    // proste centrowanie w rect
     auto b = t.getLocalBounds();
     sf::Vector2f pos = r.getPosition();
     sf::Vector2f size = r.getSize();
@@ -281,7 +280,6 @@ void SettingsScreen::draw(sf::RenderWindow& window) {
     m_fpsValue.setString(std::to_string(m_edit.fpsLimit));
     centerTextInRect(m_fpsValue, m_fpsBox);
 
-    // “disable” resolution UI gdy fullscreen
     const bool resEnabled = !m_edit.fullscreen;
     auto setEnabled = [&](sf::RectangleShape& r, bool enabled) {
         r.setFillColor(enabled ? sf::Color(30, 30, 30, 230) : sf::Color(25, 25, 25, 160));
@@ -325,7 +323,6 @@ void SettingsScreen::draw(sf::RenderWindow& window) {
 SettingsAction SettingsScreen::handleEvent(const sf::Event& event, sf::RenderWindow& window) {
     if (!m_ready) return SettingsAction::None;
 
-    // klik
     if (const auto* mb = event.getIf<sf::Event::MouseButtonPressed>()) {
         if (mb->button == sf::Mouse::Button::Left) {
             const sf::Vector2f mousePx(
@@ -377,9 +374,7 @@ SettingsAction SettingsScreen::handleEvent(const sf::Event& event, sf::RenderWin
             return SettingsAction::Back;
     }
 
-    // żeby UI dobrze wyglądało po resize w menu
     if (event.is<sf::Event::Resized>()) {
-        // nic nie musisz robić – draw() i tak liczy layout, ale zostawiamy hook
         (void)window;
     }
 

@@ -76,7 +76,6 @@ void UIManager::layoutPanels(const sf::RenderWindow& window) {
 
 void UIManager::rebuildInfoPanel(const sf::RenderWindow&, Player&) {
     m_infoPanel.clear();
-    // przyciski info nie są potrzebne teraz (overlay robimy w drawInfoPanelOverlay)
 }
 
 void UIManager::rebuildActionsPanel(const sf::RenderWindow&, Player& player) {
@@ -86,7 +85,6 @@ void UIManager::rebuildActionsPanel(const sf::RenderWindow&, Player& player) {
     bool anyUnitSelected = anySelected(player, 1);
     bool anyBuildingSelected = anySelected(player, 2);
 
-    // Nic nie zaznaczone — pusty panel
     if (!anyUnitSelected && !anyBuildingSelected) {
         return;
     }
@@ -149,8 +147,7 @@ void UIManager::rebuildActionsPanel(const sf::RenderWindow&, Player& player) {
             if (anyDemolished) addNotification("Building demolished!", sf::Color::Red, 2.f);
         } });
 
-        
-        // Sprawdź czy zaznaczono Barracks
+
         Barracks* selectedBarracks = nullptr;
         for (const auto& b : player.getBuildings()) {
             if (b && b->getType() == BuildingType::Barracks && b->isSelected()) {
@@ -247,7 +244,7 @@ void UIManager::rebuildActionsPanel(const sf::RenderWindow&, Player& player) {
 
     auto& buttons = fillPanelGrid(m_actionsPanel, actions, 2, 12.f, 42.f);
 
-    // ========== USTAW TOOLTIPY ==========
+    // ========== TOOLTIPY ==========
     for (auto& btn : buttons) {
         std::string label = btn.label.getString().toAnsiString();
 
@@ -309,7 +306,6 @@ void UIManager::rebuildActionsPanel(const sf::RenderWindow&, Player& player) {
 
 void UIManager::rebuildMapPanel(const sf::RenderWindow&, Player&) {
     m_mapPanel.clear();
-    // placeholder; minimapa później
 }
 
 void UIManager::rebuildResourcesPanel(const sf::RenderWindow& window, Player& player)
@@ -553,7 +549,7 @@ void UIManager::drawBuildTypesUI(sf::RenderWindow& window, Player& player)
 
     auto& buttons = fillPanelGrid(m_buildPanel, actions, 1, 8.f, 38.f);
 
-    // ========== USTAW TOOLTIPY DLA BUDYNKÓW ==========
+    // ========== TOOLTIPY DLA BUDYNKÓW ==========
     for (auto& btn : buttons) {
         std::string label = btn.label.getString().toAnsiString();
 
@@ -762,14 +758,13 @@ void UIManager::drawInfoPanelOverlay(sf::RenderWindow& window, const Player& pla
 void UIManager::drawMiniMap(sf::RenderWindow& window, const Player& player, const sf::View& gameView) {
     if (!m_mapRef) return;
 
-    // Obszar minimapy (wewnątrz panelu z marginesem)
     float margin = 8.f;
     float mapX = m_mapPanel.bounds.position.x + margin;
     float mapY = m_mapPanel.bounds.position.y + margin;
     float mapW = m_mapPanel.bounds.size.x - margin * 2.f;
     float mapH = m_mapPanel.bounds.size.y - margin * 2.f;
 
-    // Tło minimapy
+
     sf::RectangleShape minimapBg({ mapW, mapH });
     minimapBg.setPosition({ mapX, mapY });
     minimapBg.setFillColor(sf::Color(20, 20, 20, 255));
@@ -782,16 +777,15 @@ void UIManager::drawMiniMap(sf::RenderWindow& window, const Player& player, cons
     float worldW = static_cast<float>(mapWidth) * tileSize;
     float worldH = static_cast<float>(mapHeight) * tileSize;
 
-    // Skala: ile pikseli minimapy na jednostkę świata
     float scaleX = mapW / worldW;
     float scaleY = mapH / worldH;
     float scale = std::min(scaleX, scaleY);
 
-    // Wyśrodkuj minimapę w panelu
+
     float offsetX = mapX + (mapW - worldW * scale) * 0.5f;
     float offsetY = mapY + (mapH - worldH * scale) * 0.5f;
 
-    // Rysuj teren (uproszczony — co N-ty tile dla wydajności)
+
     const int skip = 4; // Pomijaj co 4 tile'y
     sf::VertexArray terrainDots(sf::PrimitiveType::Triangles);
 
@@ -823,7 +817,6 @@ void UIManager::drawMiniMap(sf::RenderWindow& window, const Player& player, cons
     }
     window.draw(terrainDots);
 
-    // Rysuj jednostki gracza (niebieskie kropki)
     for (const auto& unit : player.getUnits()) {
         sf::Vector2f pos = unit.getPosition();
         float px = offsetX + pos.x * scale;
@@ -847,7 +840,6 @@ void UIManager::drawMiniMap(sf::RenderWindow& window, const Player& player, cons
 		window.draw(rect);
     }
 
-    // Rysuj prostokąt widoku kamery (biała ramka)
     sf::Vector2f viewCenter = gameView.getCenter();
     sf::Vector2f viewSize = gameView.getSize();
 
@@ -946,7 +938,6 @@ void UIManager::drawTooltip(sf::RenderWindow& window)
     float w = std::min(bounds.size.x + padding * 2.f, maxWidth);
     float h = bounds.size.y + (padding+2.f) * 2.f;
 
-    // Pozycja: obok kursora, ale w granicach ekranu
     float x = m_tooltip->position.x + 15.f;
     float y = m_tooltip->position.y + 15.f;
 
@@ -956,7 +947,7 @@ void UIManager::drawTooltip(sf::RenderWindow& window)
     if (x + w > winW) x = m_tooltip->position.x - w - 10.f;
     if (y + h > winH) y = m_tooltip->position.y - h - 10.f;
 
-    // Tło
+
     sf::RectangleShape bg({ w, h });
     bg.setPosition({ x, y });
     sf::Color bgColor(10, 10, 10, static_cast<std::uint8_t>(m_tooltip->alpha * 0.9f));
@@ -977,7 +968,7 @@ void UIManager::draw(sf::RenderWindow& window, const Player& player, const sf::V
     m_actionsPanel.draw(window);
     if (m_showBuildPanel) {
         m_buildPanel.draw(window);
-		drawBuildTypesUI(window, const_cast<Player&>(player)); // const_cast bo drawBuildTypesUI modyfikuje stan UI (pokazuje/ukrywa panel), ale to jest tylko implementacja detali, więc powinno być ok
+		drawBuildTypesUI(window, const_cast<Player&>(player)); 
     }
     m_mapPanel.draw(window);
 
@@ -1021,7 +1012,6 @@ bool UIManager::handleEvent(const sf::Event& event, sf::RenderWindow& window, Pl
         return false;
     }
 
-    // rebuild gdy zmienia się selekcja
     std::size_t h1 = computeSelectionHashUnit(player);
     std::size_t h2 = computeSelectionHashBuilding(player);
     if (h1 != m_lastSelectionHashUnit || h2 !=m_lastSelectionHashBuilding) {
@@ -1036,11 +1026,9 @@ bool UIManager::handleEvent(const sf::Event& event, sf::RenderWindow& window, Pl
     );
 
 
-    // Sprawdź hover nad przyciskami
     bool hoveringButton = false;
     std::string hoveredTooltip;
 
-    // 1. Build panel (najwyżej, tylko gdy widoczny)
     if (m_showBuildPanel && m_buildPanel.bounds.contains(mousePos)) {
         for (const auto& btn : m_buildPanel.buttons) {
             if (btn.hitTest(mousePos) && !btn.tooltip.empty()) {
@@ -1051,7 +1039,6 @@ bool UIManager::handleEvent(const sf::Event& event, sf::RenderWindow& window, Pl
         }
     }
 
-    // 2. Actions panel (tylko jeśli nie hover nad buildPanel)
     if (!hoveringButton && m_actionsPanel.bounds.contains(mousePos)) {
         for (const auto& btn : m_actionsPanel.buttons) {
             if (btn.hitTest(mousePos) && !btn.tooltip.empty()) {
@@ -1062,7 +1049,6 @@ bool UIManager::handleEvent(const sf::Event& event, sf::RenderWindow& window, Pl
         }
     }
 
-    // 3. Info panel (najniżej)
     if (!hoveringButton && m_infoPanel.bounds.contains(mousePos)) {
         for (const auto& btn : m_infoPanel.buttons) {
             if (btn.hitTest(mousePos) && !btn.tooltip.empty()) {
@@ -1073,7 +1059,6 @@ bool UIManager::handleEvent(const sf::Event& event, sf::RenderWindow& window, Pl
         }
     }
 
-    // Ustaw lub wyczyść tooltip
     if (hoveringButton) {
         setTooltip(hoveredTooltip, mousePos);
     }
@@ -1081,7 +1066,6 @@ bool UIManager::handleEvent(const sf::Event& event, sf::RenderWindow& window, Pl
         clearTooltip();
     }
 
-    // klik w UI
     if (const auto* mb = event.getIf<sf::Event::MouseButtonPressed>()) {
         if (mb->button == sf::Mouse::Button::Left) {
             sf::Vector2f mousePx(
@@ -1089,7 +1073,6 @@ bool UIManager::handleEvent(const sf::Event& event, sf::RenderWindow& window, Pl
                 static_cast<float>(mb->position.y)
             );
 
-            // priorytet: build -> actions -> info -> map
 
             if (m_showBuildPanel && m_buildPanel.handleClick(mousePx)) {
 				m_showBuildPanel = false; 

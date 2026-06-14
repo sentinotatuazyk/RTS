@@ -8,8 +8,8 @@ enum class EnemyType { Goblin, Orc, Troll };
 enum class EnemyState { Aggressive, Passive, Neutral };
 enum class SettingsAction {
     None,
-    Back,   // wróć do menu bez apply
-    Apply   // zastosuj ustawienia
+    Back,   
+    Apply   
 };
 
 enum class ResourceType { Gold, Wood, Rock, Food };

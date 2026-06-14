@@ -116,17 +116,15 @@ void Enemy::moveTo(sf::Vector2f target, const Map& map)
 {
     clearPath();
 
-    // Znajdź ścieżkę A*
     m_path = map.findPath(m_position, target);
 
     if (!m_path.empty()) {
         m_pathIndex = 0;
         m_isMoving = true;
-        m_targetPosition = m_path[0]; // pierwszy waypoint
+        m_targetPosition = m_path[0]; 
     }
     else {
-        // Fallback: bezpośredni ruch jeśli A* nie znalazł ścieżki
-        // (np. cel jest bardzo blisko lub na tym samym tile)
+
         m_targetPosition = target;
         m_isMoving = true;
     }
@@ -191,22 +189,18 @@ void Enemy::followPath(float dt, float speed, const Map& map)
 {
     if (!m_isMoving || m_path.empty()) return;
 
-    // Poruszaj się w stronę aktualnego waypointu
     sf::Vector2f direction = m_targetPosition - m_position;
     float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
 
     if (distance < PATH_REACHED_DIST) {
-        // Osiągnięto waypoint — przejdź do następnego
         ++m_pathIndex;
         if (m_pathIndex >= m_path.size()) {
-            // Koniec ścieżki
             m_isMoving = false;
             m_position = m_targetPosition;
             clearPath();
             return;
         }
         m_targetPosition = m_path[m_pathIndex];
-        // Przelicz direction dla nowego celu
         direction = m_targetPosition - m_position;
         distance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
     }

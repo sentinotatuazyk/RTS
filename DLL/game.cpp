@@ -76,30 +76,28 @@ sf::Vector2f Game::findValidSpawnPosition(float pX, float pY) {
 	unsigned int tileX = static_cast<unsigned int>(pX / tS);
 	unsigned int tileY = static_cast<unsigned int>(pY / tS);
 
-	// Sprawdź czy startowa pozycja jest valid
+
 	if (tileX < mX && tileY < mY) {
 		TileType startTile = m_map.getTile(tileX, tileY);
 		if (startTile != TileType::Water && startTile != TileType::Mountain) {
-			// Zwróć środek tile'a (snap do siatki)
+
 			return { tileX * tS + tS / 2.f, tileY * tS + tS / 2.f };
 		}
 	}
 
-	// Szukaj w okolicy (spirala)
+
 	for (int r = 1; r < 50; ++r) {
 		for (int dy = -r; dy <= r; ++dy) {
 			for (int dx = -r; dx <= r; ++dx) {
-				// Tylko obramowanie kwadratu (optymalizacja)
 				if (std::abs(dx) != r && std::abs(dy) != r) continue;
 
 				int checkX = static_cast<int>(tileX) + dx;
 				int checkY = static_cast<int>(tileY) + dy;
 
-				// POPRAWKA: granice mapy
+
 				if (checkX < 0 || checkX >= static_cast<int>(mX) ||
 					checkY < 0 || checkY >= static_cast<int>(mY)) continue;
 
-				// POPRAWKA: AND zamiast OR
 				TileType checkTile = m_map.getTile(checkX, checkY);
 				if (checkTile != TileType::Water && checkTile != TileType::Mountain) {
 					return { checkX * tS + tS / 2.f, checkY * tS + tS / 2.f };
@@ -108,7 +106,6 @@ sf::Vector2f Game::findValidSpawnPosition(float pX, float pY) {
 		}
 	}
 
-	// Fallback: środek mapy
 	return { mX * tS / 2.f, mY * tS / 2.f };
 }
 
@@ -166,12 +163,12 @@ void Game::update(float deltaTime) {
 	m_fpsUpdateTimer += deltaTime;
 	m_frameCount++;
 
-	if (m_fpsUpdateTimer >= 0.25f) {  // aktualizuj co 0.25 sekundy
+	if (m_fpsUpdateTimer >= 0.25f) {  
 		m_currentFps = static_cast<float>(m_frameCount) / m_fpsUpdateTimer;
 		m_frameCount = 0;
 		m_fpsUpdateTimer = 0.f;
 
-		// Aktualizuj tekst tylko jeśli showFps jest włączone
+
 		if (m_settings.showFps) {
 			m_fpsText.setString(std::to_string(static_cast<int>(m_currentFps)) + " FPS");
 		}
@@ -202,7 +199,7 @@ void Game::update(float deltaTime) {
 				}
 				else {
 					m_isPrepPhase = false;
-					m_waveTimer = 5.f; // krótka przerwa przed pierwszą falą
+					m_waveTimer = 5.f; 
 					m_ui.addNotification("The Wave is Coming!!!", sf::Color::Red, 10.f);
 				}
 			}
@@ -212,7 +209,7 @@ void Game::update(float deltaTime) {
 			if (m_waveTimer <= 0.f) {
 				m_currentWave++;
 				spawnWave(m_currentWave);
-				m_waveTimer = 30.f; // czas do następnej fali
+				m_waveTimer = 30.f; 
 				std::string msg = "Wave " + std::to_string(m_currentWave) + " in coming!";
 				m_ui.addNotification(msg, sf::Color::Red, 5.f);
 			}
@@ -220,7 +217,6 @@ void Game::update(float deltaTime) {
 
 		handleCameraInput(deltaTime);
 
-		// Ogranicz kamerę do granic mapy
 		sf::FloatRect mapBounds = m_map.getMapBounds();
 		clampCameraToMap(mapBounds.size.x, mapBounds.size.y);
 
@@ -303,7 +299,7 @@ void Game::checkFoodPenalty(float dt)
 
 		if (food < 0) {
 			for (auto& unit : m_player.getUnits()) {
-				unit.takeDamage(5); // stała kara 5 HP na sekundę, można dostosować
+				unit.takeDamage(5); 
 			}
 		}
 
@@ -579,13 +575,11 @@ void Game::clampCameraToMap(float mapW, float mapH) {
 	sf::Vector2f center = m_view.getCenter();
 	sf::Vector2f half = m_view.getSize() * 0.5f;
 
-	// Nie pozwól wyjechać poza mapę
 	float minX = half.x;
 	float minY = half.y;
 	float maxX = mapW - half.x;
 	float maxY = mapH - half.y;
 
-	// Jeśli widok jest większy niż mapa, wyśrodkuj
 	if (maxX < minX) {
 		center.x = mapW / 2.0f;
 	}

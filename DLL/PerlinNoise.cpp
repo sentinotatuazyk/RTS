@@ -23,7 +23,7 @@ float PerlinNoise::lerp(float a, float b, float t) {
 }
 
 float PerlinNoise::grad(int hash, float x, float y) {
-	int h = hash & 3; // 4 possible gradients
+	int h = hash & 3; 
 	float u = h < 2 ? x : y;
 	float v = h < 2 ? y : x;
 	return ((h & 1) ? -u : u) + ((h & 2) ?  2.f* -v : 2.f * v);
@@ -45,19 +45,19 @@ float PerlinNoise::noise(float x, float y) const {
 		lerp(grad(ab, x, y - 1), grad(bb, x - 1, y - 1), u),
 		v
 	);
-	return (res + 1.0f) / 2.0f; // Normalize to [0,1]
+	return (res + 1.0f) / 2.0f; 
 }
 
 float PerlinNoise::fbm(float x, float y, int octaves, float persistence) const {
 	float total = 0.0f;
 	float frequency = 1.0f;
 	float amplitude = 1.0f;
-	float maxValue = 0.0f; // Used for normalizing result to [0,1]
+	float maxValue = 0.0f; 
 	for (int i = 0; i < octaves; i++) {
 		total += noise(x * frequency, y * frequency) * amplitude;
 		maxValue += amplitude;
 		amplitude *= persistence;
 		frequency *= 2.0f;
 	}
-	return total / maxValue; // Normalize to [0,1]
+	return total / maxValue; 
 }
