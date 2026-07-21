@@ -191,12 +191,18 @@ echo ""
 if [ -d "${SFML_INSTALL_DIR}" ]; then
     echo "Uruchomienie (z wlasna SFML):"
     echo " ./run.sh"
-    echo "  LD_LIBRARY_PATH=${SFML_INSTALL_DIR}/lib64:${BUILD_DIR}/DLL ./${BUILD_DIR}/projektzdll/projektzdll" >> run.sh
+    cat > run.sh << EOF
+#!/bin/bash
+LD_LIBRARY_PATH=${SFML_INSTALL_DIR}/lib64:${BUILD_DIR}/DLL ./${BUILD_DIR}/projektzdll/projektzdll
+EOF
     chmod +x run.sh
 else
     echo "Uruchomienie:"
     echo " ./run.sh"
-    echo "  ./${BUILD_DIR}/projektzdll/projektzdll" >> run.sh
+    cat > run.sh << EOF
+#!/bin/bash
+exec ./${BUILD_DIR}/projektzdll/projektzdll
+EOF
     chmod +x run.sh
 fi
 echo ""
