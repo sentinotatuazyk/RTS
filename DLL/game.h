@@ -12,9 +12,9 @@
 
 class Game {
 public:
-    EXPORT_API Game();
-    EXPORT_API ~Game();
-    EXPORT_API void run();
+    GAME_API Game();
+    GAME_API ~Game();
+    GAME_API void run();
 private:
 
     float m_prepTimer = 180.f;

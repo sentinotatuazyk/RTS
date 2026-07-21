@@ -4,7 +4,7 @@
 #include "unit.h"
 #include <SFML/Graphics.hpp>
 #include <utility>
-#include "../../SFML-3.1.0/include/SFML/Graphics/Color.hpp"
+#include <SFML/Graphics/Color.hpp>
 #include "enums.h"
 #include <SFML/System/Vector2.hpp>
 #include <memory>

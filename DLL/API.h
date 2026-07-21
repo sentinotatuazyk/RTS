@@ -1,6 +1,11 @@
 #pragma once
-#ifdef _BUILD
-#define EXPORT_API __declspec(dllexport)
+
+#ifdef _WIN32
+    #ifdef GAME_BUILD_DLL
+        #define GAME_API __declspec(dllexport)
+    #else
+        #define GAME_API __declspec(dllimport)
+    #endif
 #else
-#define EXPORT_API __declspec(dllimport)
-#endif // _BUILD
+    #define GAME_API __attribute__((visibility("default")))
+#endif

@@ -2,7 +2,7 @@
 
 #include "API.h"
 
-class EXPORT_API Klasa
+class GAME_API Klasa
 {
 public:
 	void test();

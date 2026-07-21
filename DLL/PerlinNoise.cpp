@@ -1,5 +1,6 @@
 #include "PerlinNoise.h"
 #include <random>
+#include <algorithm>
 
 PerlinNoise::PerlinNoise(unsigned int seed) {
 	std::array<int, 256> permutation;
