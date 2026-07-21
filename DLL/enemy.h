@@ -5,7 +5,6 @@
 class Game;
 class Map;
 
-
 class Enemy
 {
 	friend class Game;
