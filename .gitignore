@@ -14,3 +14,7 @@ Release/
 # Pomiń wygenerowane pliki w głównym folderze bin/lib (jeśli takowe masz)
 /bin/
 /lib/
+
+run.sh
+builddir/
+settings.bin
