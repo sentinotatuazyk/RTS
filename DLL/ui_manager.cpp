@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iomanip>
+#include <iostream>
 
 static std::size_t hashCombine(std::size_t h, std::size_t v) {
     return h ^ (v * 0x9e3779b97f4a7c15ull + (h << 6) + (h >> 2));
@@ -31,7 +32,9 @@ static bool anySelected(const Player& player, int arg) {
 }
 
 bool UIManager::init(const std::string& fontPath) {
-    if (!m_font.openFromFile(fontPath)) return false;
+    if (!m_font.openFromFile(fontPath)){ 
+        std::cerr << "Failed to init UI (loading font failed)!" << std::endl;
+    };
     m_ready = true;
     return true;
 }

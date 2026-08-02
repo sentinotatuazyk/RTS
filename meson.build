@@ -22,3 +22,4 @@ if sfml_network.found()
 endif
 subdir('DLL')
 subdir('projektzdll')
+subdir('assets')

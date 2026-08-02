@@ -1,7 +1,8 @@
 #include "menu.h"
+#include "utils.h"
 
 Menu::Menu(sf::RenderWindow& window) : m_window(window), m_title(m_font), m_start(m_font), m_settings(m_font), m_exit(m_font) {
-	std::string path = "geistmono_light.ttf";
+	std::string path = assetPath("geistmono_light.ttf");
     if (!(m_font.openFromFile(path))) {
 		throw std::runtime_error(std::string("Nieudano sie załadowac czcionki. Path: ")+ path);
 	}

@@ -1,0 +1,139 @@
+.
+├── assets
+│   ├── fence_atlas.png
+│   ├── geistmono_light.ttf
+│   ├── meson.build
+│   └── music.wav
+├── builddir
+│   ├── assets
+│   │   ├── fence_atlas.png
+│   │   └── geistmono_light.ttf
+│   ├── build.ninja
+│   ├── compile_commands.json
+│   ├── DLL
+│   │   ├── libgame.so
+│   │   └── libgame.so.p
+│   │       ├── buildings.cpp.o
+│   │       ├── enemy.cpp.o
+│   │       ├── game.cpp.o
+│   │       ├── Klasa.cpp.o
+│   │       ├── libgame.so.symbols
+│   │       ├── map.cpp.o
+│   │       ├── menu.cpp.o
+│   │       ├── PerlinNoise.cpp.o
+│   │       ├── player.cpp.o
+│   │       ├── settings.cpp.o
+│   │       ├── ui_manager.cpp.o
+│   │       ├── unit.cpp.o
+│   │       └── utils.cpp.o
+│   ├── meson-info
+│   │   ├── intro-benchmarks.json
+│   │   ├── intro-buildoptions.json
+│   │   ├── intro-buildsystem_files.json
+│   │   ├── intro-compilers.json
+│   │   ├── intro-dependencies.json
+│   │   ├── intro-installed.json
+│   │   ├── intro-install_plan.json
+│   │   ├── intro-machines.json
+│   │   ├── intro-projectinfo.json
+│   │   ├── intro-targets.json
+│   │   ├── intro-tests.json
+│   │   └── meson-info.json
+│   ├── meson-logs
+│   │   ├── meson-log.txt
+│   │   └── meson-setup.txt
+│   ├── meson-private
+│   │   ├── build.dat
+│   │   ├── __CMake_compiler_info__
+│   │   │   ├── build.ninja
+│   │   │   ├── CMakeCache.txt
+│   │   │   ├── CMakeFiles
+│   │   │   │   ├── 4.3.0
+│   │   │   │   │   ├── CMakeCXXCompiler.cmake
+│   │   │   │   │   ├── CMakeDetermineCompilerABI_CXX.bin
+│   │   │   │   │   ├── CMakeSystem.cmake
+│   │   │   │   │   └── CompilerIdCXX
+│   │   │   │   │       ├── a.out
+│   │   │   │   │       ├── CMakeCXXCompilerId.cpp
+│   │   │   │   │       └── tmp
+│   │   │   │   ├── cmake.check_cache
+│   │   │   │   ├── CMakeConfigureLog.yaml
+│   │   │   │   ├── CMakeScratch
+│   │   │   │   ├── InstallScripts.json
+│   │   │   │   ├── pkgRedirects
+│   │   │   │   ├── rules.ninja
+│   │   │   │   └── TargetDirectories.txt
+│   │   │   ├── cmake_install.cmake
+│   │   │   ├── CMakeLists.txt
+│   │   │   ├── CMakeMesonTempToolchainFile.cmake
+│   │   │   └── cmake_trace.txt
+│   │   ├── cmake_sfml-network
+│   │   │   ├── CMakeCache.txt
+│   │   │   ├── CMakeFiles
+│   │   │   │   ├── 4.3.0
+│   │   │   │   │   ├── CMakeCXXCompiler.cmake
+│   │   │   │   │   └── CMakeSystem.cmake
+│   │   │   │   ├── cmake.check_cache
+│   │   │   │   ├── CMakeConfigureLog.yaml
+│   │   │   │   ├── CMakeDirectoryInformation.cmake
+│   │   │   │   ├── InstallScripts.json
+│   │   │   │   ├── Makefile2
+│   │   │   │   ├── Makefile.cmake
+│   │   │   │   ├── pkgRedirects
+│   │   │   │   ├── progress.marks
+│   │   │   │   └── TargetDirectories.txt
+│   │   │   ├── cmake_install.cmake
+│   │   │   ├── CMakeLists.txt
+│   │   │   ├── CMakeMesonToolchainFile.cmake
+│   │   │   ├── cmake_trace.txt
+│   │   │   └── Makefile
+│   │   ├── cmd_line.txt
+│   │   ├── coredata.dat
+│   │   ├── install.dat
+│   │   ├── meson_benchmark_setup.dat
+│   │   ├── meson.lock
+│   │   ├── meson_test_setup.dat
+│   │   ├── sanity_check_for_cpp.cpp
+│   │   └── sanity_check_for_cpp.exe
+│   └── projektzdll
+│       ├── projektzdll
+│       └── projektzdll.p
+│           └── main.cpp.o
+├── build.sh
+├── DLL
+│   ├── API.h
+│   ├── buildings.cpp
+│   ├── buildings.h
+│   ├── enemy.cpp
+│   ├── enemy.h
+│   ├── enums.h
+│   ├── game.cpp
+│   ├── game.h
+│   ├── Klasa.cpp
+│   ├── Klasa.h
+│   ├── map.cpp
+│   ├── map.h
+│   ├── menu.cpp
+│   ├── menu.h
+│   ├── meson.build
+│   ├── PerlinNoise.cpp
+│   ├── PerlinNoise.h
+│   ├── player.cpp
+│   ├── player.h
+│   ├── settings.cpp
+│   ├── settings.h
+│   ├── ui_manager.cpp
+│   ├── ui_manager.h
+│   ├── unit.cpp
+│   ├── unit.h
+│   ├── utils.cpp
+│   └── utils.h
+├── meson.build
+├── projektzdll
+│   ├── main.cpp
+│   └── meson.build
+├── run.sh
+├── settings.bin
+└── struktura.txt
+
+24 directories, 113 files

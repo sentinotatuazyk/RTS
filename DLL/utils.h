@@ -2,6 +2,7 @@
 
 #include <SFML/Graphics/Color.hpp>
 #include <string>
+#include <filesystem>
 #include "map.h"
 #include "API.h"
 #include "enemy.h"
@@ -63,5 +64,10 @@ inline std::string toString(EnemyType type) {
     }
 }
 
+inline std::string assetPath(const std::string& filename) {
+    static const std::filesystem::path exeDir = 
+        std::filesystem::canonical("/proc/self/exe").parent_path();
+    return (exeDir/".."/"assets" / filename).string();
+}
 
 

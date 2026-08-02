@@ -1,5 +1,4 @@
 #include "game.h"
-#include "game.h"
 #include "utils.h"
 #include <vector>
 #include <algorithm>
@@ -25,7 +24,7 @@ Game::Game() :
 		m_settings.saveToFile("settings.bin");
 	}
 
-	if (m_fpsFont.openFromFile("geistmono_light.ttf")) {
+	if (m_fpsFont.openFromFile(assetPath("geistmono_light.ttf"))) {
 		m_fpsText.setFont(m_fpsFont);
 		m_fpsText.setCharacterSize(16);
 		m_fpsText.setFillColor(sf::Color::Green);
@@ -34,21 +33,21 @@ Game::Game() :
 
 	applySettingsToWindows();
 	
-	m_settingsScreen.init("geistmono_light.ttf");
+	m_settingsScreen.init(assetPath("geistmono_light.ttf"));
 	float centerX = mX * tS / 2.f;
 	float centerY = mX * tS / 2.f;
 
 	m_view = m_window.getDefaultView();
 	m_view.setCenter({centerX, centerY});
 
-	if (!m_fenceAtlas.loadFromFile("fence_atlas.png")) {
+	if (!m_fenceAtlas.loadFromFile(assetPath("fence_atlas.png"))) {
 		std::cerr << "Failed to load fence atlas texture!" << std::endl;
 		return ;
 	}
 
 	Fence::setAtlas(&m_fenceAtlas);
 
-	m_ui.init("geistmono_light.ttf");
+	m_ui.init(assetPath("geistmono_light.ttf"));
 	m_ui.setMap(&m_map);
 	m_ui.forceRebuild(m_window, m_player);
 
